@@ -15,7 +15,8 @@
 [CmdletBinding()]
 param(
     [string]$ClientName = "Eye Of Ru Enterprises",
-    [string]$WebhookUrl = "https://script.google.com/macros/s/AKfycbwvInc8tbMosqj2AHjGx-gfCWSkQ9j36AKwsFNVSg9JLxOwzotAnaLqZn2cj94rYxrcUA/exec"
+    [string]$WebhookUrl = "https://script.google.com/macros/s/AKfycbwvInc8tbMosqj2AHjGx-gfCWSkQ9j36AKwsFNVSg9JLxOwzotAnaLqZn2cj94rYxrcUA/exec",
+    [switch]$CleanArchive
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,6 +31,31 @@ function Write-Header {
     Write-Host " Webhook URL   : $WebhookUrl" -ForegroundColor DarkGray
     Write-Host " Synchronized  : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor DarkGray
     Write-Host "==========================================================================`n" -ForegroundColor DarkYellow
+}
+
+function Invoke-LedgerCleanArchive {
+    Write-Host "`nInitiating Google Apps Script 30-Day Ledger Archiving..." -ForegroundColor Cyan
+    try {
+        $escapedName = [System.Uri]::EscapeDataString($ClientName)
+        $uri = "$WebhookUrl`?action=ARCHIVE_OLD_RECORDS`&clientName=$escapedName"
+        $res = Invoke-RestMethod -Uri $uri -Method Get -TimeoutSec 30
+        if ($res.status -eq "SUCCESS") {
+            Write-Host "[OK] Ledger Archiving Complete!" -ForegroundColor Green
+            Write-Host " Archived Leads Count   : $($res.archivedLeadsCount)" -ForegroundColor Green
+            Write-Host " Archived Staging Count : $($res.archivedStagingCount)" -ForegroundColor Green
+            Write-Host " 30-Day Cutoff Date     : $($res.cutoffDate)" -ForegroundColor DarkGray
+        } else {
+            Write-Host "[!] Archiving response: $($res.message)" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "[ERROR] Failed to run archiving: $_" -ForegroundColor Red
+    }
+}
+
+if ($CleanArchive) {
+    Write-Header
+    Invoke-LedgerCleanArchive
+    exit 0
 }
 
 Write-Header
@@ -48,6 +74,10 @@ try {
 if (-not $response -or -not $response.items -or $response.items.Count -eq 0) {
     Write-Host "No proposals found in the staging queue for '$ClientName'." -ForegroundColor Green
     Write-Host "Queue is 100% clean and up to date." -ForegroundColor DarkGreen
+    $cleanOpt = Read-Host "`nRun 30-day ledger archiving now? [C]lean / [Enter] to exit"
+    if ($cleanOpt -eq "C" -or $cleanOpt -eq "c") {
+        Invoke-LedgerCleanArchive
+    }
     exit 0
 }
 
@@ -77,6 +107,10 @@ if ($pendingItems.Count -eq 0) {
     $allItems | Select-Object -Last 5 | ForEach-Object {
         $color = if ($_.status -eq "DEPLOYED") { "Green" } elseif ($_.status -eq "REJECTED") { "DarkGray" } else { "Yellow" }
         Write-Host " * [$($_.status)] $($_.targetSection) > $($_.field) ($($_.timestamp))" -ForegroundColor $color
+    }
+    $cleanOpt = Read-Host "`nQueue is clear. Run 30-day ledger archiving now? [C]lean / [Enter] to exit"
+    if ($cleanOpt -eq "C" -or $cleanOpt -eq "c") {
+        Invoke-LedgerCleanArchive
     }
     exit 0
 }
@@ -168,10 +202,11 @@ foreach ($item in $pendingItems) {
     Write-Host " [2] Flag for 2-STEP PHONE VERIFICATION (marks REQUIRES_2STEP)" -ForegroundColor Magenta
     Write-Host " [U] Mark UNDER_REVIEW (investigating architectural impact)" -ForegroundColor DarkYellow
     Write-Host " [R] Reject proposal (logs reason in sheet)" -ForegroundColor Red
+    Write-Host " [C] Clean/Archive aged ledger records (>30 days closed/deployed)" -ForegroundColor Cyan
     Write-Host " [S] Skip to next item" -ForegroundColor Gray
     Write-Host " [Q] Quit triage CLI`n" -ForegroundColor DarkGray
 
-    $action = Read-Host "Select operator action [A / E / 2 / U / R / S / Q]"
+    $action = Read-Host "Select operator action [A / E / 2 / U / R / C / S / Q]"
 
     if ($action -eq "A" -or $action -eq "a") {
         Write-Host "`nMarking as DEPLOYED and notifying client..." -ForegroundColor Green
@@ -254,6 +289,10 @@ foreach ($item in $pendingItems) {
         $payloadJson = $payloadObj | ConvertTo-Json
         $res = Invoke-RestMethod -Uri $WebhookUrl -Method Post -Body $payloadJson -ContentType "application/json; charset=utf-8"
         Write-Host "[OK] Status updated to REJECTED in Google Sheet ledger." -ForegroundColor Red
+        Start-Sleep -Seconds 2
+    }
+    elseif ($action -eq "C" -or $action -eq "c") {
+        Invoke-LedgerCleanArchive
         Start-Sleep -Seconds 2
     }
     elseif ($action -eq "Q" -or $action -eq "q") {

@@ -181,12 +181,13 @@ All endpoints communicate via `POST` JSON payloads (with CORS support) or `GET` 
 | Action Header | Method | Required Fields | Function & Side Effects |
 | :--- | :--- | :--- | :--- |
 | `SUBMIT_LEAD` | `POST` | `clientName`, `fullName`, `email`, `message`, `phone`, `subject` | Appends row to `Leads` sheet tab. Dispatches email notification to agency. |
-| `GET_LEADS` | `GET`/`POST` | `clientName` | Reads all rows from `Leads` tab. Returns array of lead objects with `rowIndex`, `status`, contact info. |
+| `GET_LEADS` | `GET`/`POST` | `clientName` (optional: `includeArchived`, `limit`) | Reads rows from `Leads` tab (default `limit=100`). Returns array of lead objects with `rowIndex`, `status`, contact info. |
 | `UPDATE_LEAD_STATUS` | `POST` | `clientName`, `rowIndex`, `newStatus` | Updates column 7 (Status) in the `Leads` sheet. Returns success payload. |
 | `SUBMIT_STAGING_REQUEST` | `POST` | `clientName`, `targetSection`, `field`, `currentValue`, `proposedValue`, `clientRationale` | Appends proposal to `Staging_Queue` tab. Triggers operator triage notification email. |
-| `GET_STAGING_QUEUE` | `GET`/`POST` | `clientName` | Reads active items from `Staging_Queue` tab for dashboard display. |
+| `GET_STAGING_QUEUE` | `GET`/`POST` | `clientName` (optional: `includeArchived`, `limit`) | Reads active items from `Staging_Queue` tab for dashboard display (default `limit=100`). |
 | `UPDATE_STAGING_STATUS` | `POST` | `clientName`, `rowIndex`, `newStatus`, `operatorNotes` | Updates status (`DEPLOYED`, `REJECTED`, `EXPEDITED`, `REQUIRES_2STEP`). If deployed, dispatches client email. |
 | `UPLOAD_ASSET` | `POST` | `clientName`, `base64Data`, `fileName`, `mimeType` | Decodes Base64 image and saves directly to Google Drive `02_Brand Assets & Media` folder. |
+| `ARCHIVE_OLD_RECORDS` | `GET`/`POST` | `clientName` | Migrates closed leads and deployed/rejected proposals older than 30 days to `Archive_Leads` / `Archive_Staging` tabs via 2-phase atomic commit. |
 
 ---
 
@@ -195,7 +196,11 @@ All endpoints communicate via `POST` JSON payloads (with CORS support) or `GET` 
 When a client submits a change proposal from their phone, the agency operator manages it cleanly from PowerShell:
 
 ```powershell
+# Interactive triage session
 .\scripts\Sync-StagingQueue.ps1
+
+# Non-interactive automated ledger archiving
+.\scripts\Sync-StagingQueue.ps1 -ClientName "Target Client Business Name" -CleanArchive
 ```
 
 1. **Urgency Banner**: Highlights any expedited turnaround (`[!] URGENT 24H SLA: NEEDED BY TOMORROW`).
@@ -205,4 +210,56 @@ When a client submits a change proposal from their phone, the agency operator ma
    * `[E]` **Mark EXPEDITED**: Escalates priority to 24-hour turnaround.
    * `[2]` **Flag 2-STEP**: Marks `REQUIRES_2STEP` requiring verbal phone confirmation before production push.
    * `[R]` **Reject Proposal**: Records operator rationale in the client's spreadsheet.
+   * `[C]` **Clean/Archive Aged Records**: Runs 30-day archival on closed leads and deployed proposals.
    * `[S]` **Skip**: Advances to next queue proposal.
+
+---
+
+## 6. Ledger Retention & Archiving Engine Protocol
+
+To keep Google Apps Script response times sub-150ms over months and years of continuous client operations, active sheets (`Leads` and `Staging_Queue`) enforce a strict retention protocol:
+
+1. **30-Day SLA Cutoff**: Records with timestamps older than 30 days matching terminal statuses:
+   * `Leads`: `Status === 'Closed'`
+   * `Staging_Queue`: `Status === 'DEPLOYED'` or `Status === 'REJECTED'`
+2. **Two-Phase Atomic Commit & Descending-Order Deletion**:
+   * **Phase 1 (Inspection & Append)**: Qualifying rows are batch-inserted into `Archive_Leads` and `Archive_Staging`. A `SpreadsheetApp.flush()` verifies that data was safely committed.
+   * **Phase 2 (Bottom-Up Deletion)**: Source rows are deleted strictly in descending row index order (`for (let i = indices.length - 1; i >= 0; i--) sheet.deleteRow(indices[i])`). This mathematically prevents index-drift corruption.
+   * **Zero Data Loss Guarantee**: If an error occurs during append, no source rows are ever deleted.
+3. **Payload Pagination**: Dashboard requests default to `limit=100`, preventing mobile browser memory bloat while preserving full history in Google Drive.
+
+---
+
+## 7. Offline Resilience & Dual-Layer Storage Contract
+
+The AI Concierge client runs on intermittent cellular data connections when accessed via mobile PWA webclips:
+
+1. **Local Persistent Storage Buffering**:
+   * Every incoming lead and staged proposal is mirrored in `localStorage` under namespaced keys (`eyeofru_inquiries`, `eyeofru_staging_drafts`).
+   * When offline, leads are loaded instantly from the local buffer and proposals can still be drafted and reviewed.
+2. **Visual Network Beacon**:
+   * Listens to `window.addEventListener('online')` and `window.addEventListener('offline')`.
+   * **Offline**: `#queueCountBadge` transforms to `○ Offline (Buffer Active)` in amber, and polling intervals automatically pause to conserve mobile battery.
+   * **Online**: Flashes `● Reconnected` in emerald, immediately triggers an eager sync check, and resumes the 35s polling loop.
+3. **Mobile Pull-to-Refresh Gesture**:
+   * Supports natural touch drag-down (`touchstart`, `touchmove`, `touchend`) on the queue container with damped resistance (`deltaY * 0.45`).
+   * Crossing the 70px threshold flips the chevron indicator and triggers a micro-haptic vibration (`navigator.vibrate?.(12)`).
+   * Releasing triggers `handleForceSync()` with a smooth spring animation reset.
+
+---
+
+## 8. Audio Notification Contract & Web Audio Synthesizer
+
+For desktop operators and background mobile PWA instances, immediate auditory awareness is critical for responding to high-value leads:
+
+1. **Zero External Audio Assets**:
+   * Synthesized entirely in-browser using the native **Web Audio API** (`window.AudioContext` or `window.webkitAudioContext`).
+   * No `.mp3` or `.wav` network requests; 100% immune to asset 404s or CDN downtime.
+2. **Harmonic Dual-Tone Earcon Specification**:
+   * Tone 1: D5 (`587.33 Hz`) ascending smoothly to Tone 2: A5 (`880.00 Hz`).
+   * Attack: `0.02s` gentle curve to prevent pop/click transients.
+   * Decay: `0.7s` exponential volume decay (`gainNode.gain.exponentialRampToValueAtTime`).
+3. **Autoplay Compliance & Mute State**:
+   * Audio context is unlocked lazily upon the user's first interactive gesture (`pointerdown`, `touchstart`, `click`, `keydown`).
+   * State is persisted across sessions in `localStorage` (`eyeofru_audio_muted`).
+   * A discreet `🔔` / `🔕` toggle button in the navigation header allows clients to mute sounds with one tap.

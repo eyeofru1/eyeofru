@@ -551,7 +551,7 @@ function doPost(e) {
 
     // Route 10: Fetch Live Staging Queue Items
     else if (action === "GET_STAGING_QUEUE") {
-      var queueItems = getStagingQueueItems(clientFolders, clientName);
+      var queueItems = getStagingQueueItems(clientFolders, clientName, data.includeArchived, data.limit);
       return jsonResponse({
         status: "SUCCESS",
         action: "GET_STAGING_QUEUE",
@@ -563,7 +563,7 @@ function doPost(e) {
 
     // Route 11: Fetch Client Leads / Inquiries
     else if (action === "GET_LEADS") {
-      var leadItems = getLeadItems(clientFolders, clientName);
+      var leadItems = getLeadItems(clientFolders, clientName, data.includeArchived, data.limit);
       return jsonResponse({
         status: "SUCCESS",
         action: "GET_LEADS",
@@ -618,6 +618,12 @@ function doPost(e) {
       }
 
       return jsonResponse({ status: "ERROR", message: "Matching lead row not found in Leads sheet" });
+    }
+
+    // Route 13: Clean & Archive Aged Records (>30 Days Closed / Deployed / Rejected)
+    else if (action === "ARCHIVE_OLD_RECORDS") {
+      var archiveResult = archiveOldRecords(clientFolders, clientName);
+      return jsonResponse(archiveResult);
     }
 
     return jsonResponse({ status: "ERROR", message: "Unknown action: " + action });
@@ -868,63 +874,224 @@ function sendClientDeploymentConfirmation(clientEmail, clientName, targetSection
 }
 
 /**
- * Helper to fetch all rows from Staging_Queue
+ * Route 13 / Helper: Clean & Archive Aged Records (>30 Days Closed / Deployed / Rejected)
+ * Uses two-phase commit and descending-order row deletion to guarantee zero data loss.
  */
-function getStagingQueueItems(clientFolders, clientName) {
+function archiveOldRecords(clientFolders, clientName) {
+  var sheetData = getOrCreateClientSheet(clientFolders, clientName);
+  var ss = sheetData.ss;
+  var cutoff = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000));
+  var archivedLeadsCount = 0;
+  var archivedStagingCount = 0;
+
+  // 1. Archive Leads marked 'Closed' older than 30 days
+  var leadsSheet = ss.getSheetByName("Leads");
+  if (leadsSheet) {
+    var leadValues = leadsSheet.getDataRange().getValues();
+    var leadsToArchive = [];
+    var leadIndicesToDelete = [];
+
+    for (var l = 1; l < leadValues.length; l++) {
+      var lRow = leadValues[l];
+      var lDate = lRow[0] instanceof Date ? lRow[0] : (lRow[0] ? new Date(lRow[0]) : null);
+      var lStatus = (lRow[6] || "").toString().trim().toLowerCase();
+
+      if (lDate && !isNaN(lDate.getTime()) && lDate < cutoff && lStatus === "closed") {
+        leadsToArchive.push(lRow);
+        leadIndicesToDelete.push(l + 1);
+      }
+    }
+
+    if (leadsToArchive.length > 0) {
+      var archiveLeadsSheet = ss.getSheetByName("Archive_Leads");
+      if (!archiveLeadsSheet) {
+        archiveLeadsSheet = ss.insertSheet("Archive_Leads");
+        archiveLeadsSheet.appendRow(["Timestamp", "Full Name", "Email", "Phone", "Subject", "Message", "Status", "Turnstile Verified"]);
+        archiveLeadsSheet.getRange("A1:H1").setFontWeight("bold").setBackground("#0d0f12").setFontColor("#e5be7d");
+      }
+      archiveLeadsSheet.getRange(archiveLeadsSheet.getLastRow() + 1, 1, leadsToArchive.length, leadsToArchive[0].length).setValues(leadsToArchive);
+      SpreadsheetApp.flush();
+
+      for (var ld = leadIndicesToDelete.length - 1; ld >= 0; ld--) {
+        leadsSheet.deleteRow(leadIndicesToDelete[ld]);
+      }
+      SpreadsheetApp.flush();
+      archivedLeadsCount = leadsToArchive.length;
+    }
+  }
+
+  // 2. Archive Staging Queue records marked 'DEPLOYED' or 'REJECTED' older than 30 days
+  var queueSheet = ss.getSheetByName("Staging_Queue");
+  if (queueSheet) {
+    var queueValues = queueSheet.getDataRange().getValues();
+    var stagingToArchive = [];
+    var stagingIndicesToDelete = [];
+
+    for (var q = 1; q < queueValues.length; q++) {
+      var qRow = queueValues[q];
+      var qDate = qRow[0] instanceof Date ? qRow[0] : (qRow[0] ? new Date(qRow[0]) : null);
+      var qStatus = (qRow[6] || "").toString().trim().toUpperCase();
+
+      if (qDate && !isNaN(qDate.getTime()) && qDate < cutoff && (qStatus === "DEPLOYED" || qStatus === "REJECTED")) {
+        stagingToArchive.push(qRow);
+        stagingIndicesToDelete.push(q + 1);
+      }
+    }
+
+    if (stagingToArchive.length > 0) {
+      var archiveStagingSheet = ss.getSheetByName("Archive_Staging");
+      if (!archiveStagingSheet) {
+        archiveStagingSheet = ss.insertSheet("Archive_Staging");
+        archiveStagingSheet.appendRow(["Timestamp", "Client Name", "Target Section", "Field", "Current Value", "Proposed Value", "Status", "Client Rationale", "Submitted By", "Operator Notes"]);
+        archiveStagingSheet.getRange("A1:J1").setFontWeight("bold").setBackground("#0d0f12").setFontColor("#e5be7d");
+      }
+      archiveStagingSheet.getRange(archiveStagingSheet.getLastRow() + 1, 1, stagingToArchive.length, stagingToArchive[0].length).setValues(stagingToArchive);
+      SpreadsheetApp.flush();
+
+      for (var qd = stagingIndicesToDelete.length - 1; qd >= 0; qd--) {
+        queueSheet.deleteRow(stagingIndicesToDelete[qd]);
+      }
+      SpreadsheetApp.flush();
+      archivedStagingCount = stagingToArchive.length;
+    }
+  }
+
+  return {
+    status: "SUCCESS",
+    action: "ARCHIVE_OLD_RECORDS",
+    clientName: clientName,
+    archivedLeadsCount: archivedLeadsCount,
+    archivedStagingCount: archivedStagingCount,
+    cutoffDate: cutoff.toISOString()
+  };
+}
+
+/**
+ * Helper to fetch rows from Staging_Queue (with optional archived rows and limit)
+ */
+function getStagingQueueItems(clientFolders, clientName, includeArchived, limit) {
+  includeArchived = (includeArchived === true || includeArchived === "true");
+  limit = parseInt(limit, 10);
+  if (isNaN(limit) || limit <= 0) limit = 100;
+  if (limit > 500) limit = 500;
+
   var sheetData = getOrCreateClientSheet(clientFolders, clientName);
   var queueSheet = sheetData.ss.getSheetByName("Staging_Queue");
-  if (!queueSheet) return [];
-
-  var values = queueSheet.getDataRange().getValues();
-  if (values.length <= 1) return [];
-
   var items = [];
-  for (var i = 1; i < values.length; i++) {
-    var row = values[i];
-    items.push({
-      rowIndex: i + 1,
-      timestamp: row[0],
-      clientName: row[1] || clientName,
-      targetSection: row[2] || "",
-      field: row[3] || "",
-      currentValue: row[4] || "",
-      proposedValue: row[5] || "",
-      status: row[6] || "PENDING_REVIEW",
-      clientRationale: row[7] || "",
-      submittedBy: row[8] || "",
-      operatorNotes: row[9] || ""
-    });
+
+  if (queueSheet) {
+    var values = queueSheet.getDataRange().getValues();
+    for (var i = 1; i < values.length; i++) {
+      var row = values[i];
+      if (!row[0] && !row[2]) continue;
+      items.push({
+        rowIndex: i + 1,
+        timestamp: row[0],
+        clientName: row[1] || clientName,
+        targetSection: row[2] || "",
+        field: row[3] || "",
+        currentValue: row[4] || "",
+        proposedValue: row[5] || "",
+        status: row[6] || "PENDING_REVIEW",
+        clientRationale: row[7] || "",
+        submittedBy: row[8] || "",
+        operatorNotes: row[9] || "",
+        isArchived: false
+      });
+    }
+  }
+
+  if (includeArchived) {
+    var archiveSheet = sheetData.ss.getSheetByName("Archive_Staging");
+    if (archiveSheet) {
+      var aValues = archiveSheet.getDataRange().getValues();
+      for (var a = 1; a < aValues.length; a++) {
+        var aRow = aValues[a];
+        if (!aRow[0] && !aRow[2]) continue;
+        items.push({
+          rowIndex: -(a + 1),
+          timestamp: aRow[0],
+          clientName: aRow[1] || clientName,
+          targetSection: aRow[2] || "",
+          field: aRow[3] || "",
+          currentValue: aRow[4] || "",
+          proposedValue: aRow[5] || "",
+          status: aRow[6] || "DEPLOYED",
+          clientRationale: aRow[7] || "",
+          submittedBy: aRow[8] || "",
+          operatorNotes: aRow[9] || "",
+          isArchived: true
+        });
+      }
+    }
+  }
+
+  if (items.length > limit) {
+    items = items.slice(items.length - limit);
   }
   return items;
 }
 
 /**
- * Helper to fetch all rows from Leads sheet
+ * Helper to fetch rows from Leads sheet (with optional archived rows and limit)
  */
-function getLeadItems(clientFolders, clientName) {
+function getLeadItems(clientFolders, clientName, includeArchived, limit) {
+  includeArchived = (includeArchived === true || includeArchived === "true");
+  limit = parseInt(limit, 10);
+  if (isNaN(limit) || limit <= 0) limit = 100;
+  if (limit > 500) limit = 500;
+
   var sheetData = getOrCreateClientSheet(clientFolders, clientName);
   var leadsSheet = sheetData.ss.getSheetByName("Leads") || sheetData.ss.getSheets()[0];
-  if (!leadsSheet) return [];
-
-  var values = leadsSheet.getDataRange().getValues();
-  if (values.length <= 1) return [];
-
   var leads = [];
-  for (var i = 1; i < values.length; i++) {
-    var row = values[i];
-    if (!row[0] && !row[1] && !row[2]) continue;
 
-    leads.push({
-      rowIndex: i + 1,
-      timestamp: row[0],
-      fullName: row[1] || "",
-      email: row[2] || "",
-      phone: row[3] || "",
-      subject: row[4] || "",
-      message: row[5] || "",
-      status: row[6] || "New Lead",
-      turnstile: row[7] || ""
-    });
+  if (leadsSheet) {
+    var values = leadsSheet.getDataRange().getValues();
+    for (var i = 1; i < values.length; i++) {
+      var row = values[i];
+      if (!row[0] && !row[1] && !row[2]) continue;
+
+      leads.push({
+        rowIndex: i + 1,
+        timestamp: row[0],
+        fullName: row[1] || "",
+        email: row[2] || "",
+        phone: row[3] || "",
+        subject: row[4] || "",
+        message: row[5] || "",
+        status: row[6] || "New Lead",
+        turnstile: row[7] || "",
+        isArchived: false
+      });
+    }
+  }
+
+  if (includeArchived) {
+    var archiveLeads = sheetData.ss.getSheetByName("Archive_Leads");
+    if (archiveLeads) {
+      var alValues = archiveLeads.getDataRange().getValues();
+      for (var al = 1; al < alValues.length; al++) {
+        var alRow = alValues[al];
+        if (!alRow[0] && !alRow[1] && !alRow[2]) continue;
+
+        leads.push({
+          rowIndex: -(al + 1),
+          timestamp: alRow[0],
+          fullName: alRow[1] || "",
+          email: alRow[2] || "",
+          phone: alRow[3] || "",
+          subject: alRow[4] || "",
+          message: alRow[5] || "",
+          status: alRow[6] || "Closed",
+          turnstile: alRow[7] || "",
+          isArchived: true
+        });
+      }
+    }
+  }
+
+  if (leads.length > limit) {
+    leads = leads.slice(leads.length - limit);
   }
   return leads;
 }
@@ -980,7 +1147,7 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.action === "GET_STAGING_QUEUE") {
     var clientName = sanitizeName(e.parameter.clientName || "General Client");
     var clientFolders = getClientFolderTree(clientName);
-    var queueItems = getStagingQueueItems(clientFolders, clientName);
+    var queueItems = getStagingQueueItems(clientFolders, clientName, e.parameter.includeArchived, e.parameter.limit);
     return jsonResponse({
       status: "SUCCESS",
       action: "GET_STAGING_QUEUE",
@@ -993,7 +1160,7 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.action === "GET_LEADS") {
     var clientName = sanitizeName(e.parameter.clientName || "General Client");
     var clientFolders = getClientFolderTree(clientName);
-    var leadItems = getLeadItems(clientFolders, clientName);
+    var leadItems = getLeadItems(clientFolders, clientName, e.parameter.includeArchived, e.parameter.limit);
     return jsonResponse({
       status: "SUCCESS",
       action: "GET_LEADS",
@@ -1003,9 +1170,16 @@ function doGet(e) {
     });
   }
 
+  if (e && e.parameter && e.parameter.action === "ARCHIVE_OLD_RECORDS") {
+    var clientName = sanitizeName(e.parameter.clientName || "General Client");
+    var clientFolders = getClientFolderTree(clientName);
+    var archiveResult = archiveOldRecords(clientFolders, clientName);
+    return jsonResponse(archiveResult);
+  }
+
   var statusInfo = {
     status: "ACTIVE",
-    version: "1.3.0",
+    version: "1.4.0",
     service: "Eye Of Ru Ingestion & Leads Webhook",
     activeUser: Session.getActiveUser().getEmail(),
     availableAliases: aliases,

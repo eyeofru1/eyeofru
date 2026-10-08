@@ -291,7 +291,15 @@
       </div>
 
       <!-- DUAL-TAB PANEL: STAGING QUEUE, LIVE INQUIRIES & SITE ANALYTICS -->
-      <div class="h-72 rounded-2xl bg-charcoal-850/80 border border-charcoal-800 p-4 flex flex-col justify-between overflow-hidden shadow-xl">
+      <div id="queuePanelContainer" class="relative h-72 rounded-2xl bg-charcoal-850/80 border border-charcoal-800 p-4 flex flex-col justify-between overflow-hidden shadow-xl">
+        <!-- Visual Pull-to-Refresh Indicator (Mobile / Touch) -->
+        <div id="pullToRefreshIndicator" class="hidden absolute top-2 left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-transform duration-150">
+          <div class="px-3 py-1 rounded-full bg-charcoal-900/95 border border-bronze-500/40 text-bronze-300 text-[10px] font-mono shadow-xl flex items-center gap-1.5 backdrop-blur-md">
+            <span id="pullIndicatorArrow" class="inline-block transition-transform duration-150 font-bold">↓</span>
+            <span id="pullIndicatorText">Pull down to refresh</span>
+          </div>
+        </div>
+
         <!-- Tab Bar Navigation Header -->
         <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-charcoal-800/80 flex-shrink-0">
           <div class="flex items-center gap-1.5 font-mono text-xs overflow-x-auto no-scrollbar">
@@ -332,9 +340,26 @@
               </span>
             </button>
           </div>
-          <span id="queueCountBadge" class="text-[10px] font-mono text-emerald-400 flex items-center gap-1 flex-shrink-0">
-            ● Live Sync
-          </span>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button 
+              id="audioMuteToggleBtn" 
+              type="button" 
+              onclick="toggleAudioChime()" 
+              class="text-slate-400 hover:text-bronze-300 transition p-1 rounded hover:bg-charcoal-800 inline-flex items-center justify-center focus:outline-none" 
+              title="Lead notification chime active (click to mute)"
+              aria-label="Toggle lead notification chime">
+              <svg id="audioIconOn" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/>
+              </svg>
+              <svg id="audioIconMuted" class="w-3.5 h-3.5 hidden text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+              </svg>
+            </button>
+            <span id="queueCountBadge" class="text-[10px] font-mono text-emerald-400 flex items-center gap-1 flex-shrink-0">
+              ● Live Sync
+            </span>
+          </div>
         </div>
 
         <!-- TAB 1: AIR-GAPPED STAGING QUEUE -->
@@ -728,6 +753,8 @@
         if (btn) btn.innerHTML = `<span>Show Guide</span>`;
       }
       setupDragAndDrop();
+      updateAudioToggleUI();
+      setupPullToRefresh();
       fetchStagingQueue(false);
       fetchLiveInquiries(false);
       fetchAnalytics(7, false);
@@ -1426,6 +1453,12 @@ Applied Enhancements:
     function updateQueueBadge() {
       const badge = document.getElementById('queueCountBadge');
       if (!badge) return;
+      if (!navigator.onLine) {
+        badge.textContent = '○ Offline (Buffer Active)';
+        badge.className = "text-[10px] font-mono text-amber-400 flex items-center gap-1 flex-shrink-0";
+        updateTabSignalingBadges();
+        return;
+      }
       if (currentQueueTab === 'staging') {
         badge.textContent = stagedItems.length > 0 ? `● ${stagedItems.length} Staged` : '● Live Sync';
         badge.className = "text-[10px] font-mono text-emerald-400 flex items-center gap-1 flex-shrink-0";
@@ -1493,8 +1526,13 @@ Applied Enhancements:
 
     function startDashboardPolling() {
       if (dashboardPollTimer) return;
+      if (!navigator.onLine) return;
       if (document.visibilityState !== 'visible') return;
       dashboardPollTimer = setInterval(() => {
+        if (!navigator.onLine) {
+          stopDashboardPolling();
+          return;
+        }
         if (document.visibilityState === 'visible') {
           fetchStagingQueue(false);
           fetchLiveInquiries(false);
@@ -1516,12 +1554,14 @@ Applied Enhancements:
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        fetchStagingQueue(false);
-        fetchLiveInquiries(false);
-        if (currentQueueTab === 'analytics') {
-          fetchAnalytics(currentAnalyticsDays, false);
+        if (navigator.onLine) {
+          fetchStagingQueue(false);
+          fetchLiveInquiries(false);
+          if (currentQueueTab === 'analytics') {
+            fetchAnalytics(currentAnalyticsDays, false);
+          }
+          startDashboardPolling();
         }
-        startDashboardPolling();
       } else {
         stopDashboardPolling();
       }
@@ -1529,18 +1569,250 @@ Applied Enhancements:
 
     window.addEventListener('focus', () => {
       if (document.visibilityState === 'visible') {
-        fetchStagingQueue(false);
-        fetchLiveInquiries(false);
-        if (currentQueueTab === 'analytics') {
-          fetchAnalytics(currentAnalyticsDays, false);
+        if (navigator.onLine) {
+          fetchStagingQueue(false);
+          fetchLiveInquiries(false);
+          if (currentQueueTab === 'analytics') {
+            fetchAnalytics(currentAnalyticsDays, false);
+          }
+          startDashboardPolling();
         }
-        startDashboardPolling();
       }
     });
 
     window.addEventListener('beforeunload', () => {
       stopDashboardPolling();
     });
+
+    // ==========================================
+    // NETWORK RESILIENCE (OFFLINE / ONLINE HOOKS)
+    // ==========================================
+    function handleNetworkOnline() {
+      const badge = document.getElementById('queueCountBadge');
+      if (badge) {
+        badge.innerHTML = `<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Reconnected`;
+        badge.className = "text-[10px] font-mono text-emerald-400 flex items-center gap-1 flex-shrink-0";
+      }
+      showToast("Network restored. Syncing ledger...", "info");
+      startDashboardPolling();
+      handleForceSync();
+      setTimeout(() => {
+        updateQueueBadge();
+      }, 3500);
+    }
+
+    function handleNetworkOffline() {
+      stopDashboardPolling();
+      updateQueueBadge();
+      showToast("Network offline. Actions saved to local buffer.", "info");
+    }
+
+    window.addEventListener('online', handleNetworkOnline);
+    window.addEventListener('offline', handleNetworkOffline);
+
+    // ==========================================
+    // WEB AUDIO API LEAD CHIME (ZERO-ASSET)
+    // ==========================================
+    let audioCtx = null;
+    let isAudioMuted = localStorage.getItem('eyeofru_audio_muted') === 'true';
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtxClass) {
+          audioCtx = new AudioCtxClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function updateAudioToggleUI() {
+      const iconOn = document.getElementById('audioIconOn');
+      const iconMuted = document.getElementById('audioIconMuted');
+      const btn = document.getElementById('audioMuteToggleBtn');
+      if (!btn) return;
+      if (isAudioMuted) {
+        if (iconOn) iconOn.classList.add('hidden');
+        if (iconMuted) iconMuted.classList.remove('hidden');
+        btn.title = "Lead notification chime muted (click to unmute)";
+        btn.classList.add('text-slate-600');
+        btn.classList.remove('text-slate-400');
+      } else {
+        if (iconOn) iconOn.classList.remove('hidden');
+        if (iconMuted) iconMuted.classList.add('hidden');
+        btn.title = "Lead notification chime active (click to mute)";
+        btn.classList.remove('text-slate-600');
+        btn.classList.add('text-slate-400');
+      }
+    }
+
+    function toggleAudioChime() {
+      isAudioMuted = !isAudioMuted;
+      localStorage.setItem('eyeofru_audio_muted', isAudioMuted ? 'true' : 'false');
+      updateAudioToggleUI();
+      if (!isAudioMuted) {
+        initAudioContext();
+        playInboundLeadChime();
+        showToast("Lead notification chime enabled.", "info");
+      } else {
+        showToast("Lead notification chime muted.", "info");
+      }
+    }
+
+    // Unlock Web Audio context gracefully on first user interaction (touch/click/keypress)
+    ['click', 'touchstart', 'keydown', 'pointerdown'].forEach(evt => {
+      window.addEventListener(evt, () => {
+        initAudioContext();
+      }, { once: true, passive: true });
+    });
+
+    function playInboundLeadChime() {
+      if (isAudioMuted) return;
+      try {
+        initAudioContext();
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const now = audioCtx.currentTime;
+
+        // Note 1: D5 (587.33 Hz) gentle chime with soft attack & smooth exponential decay
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, now);
+
+        gain1.gain.setValueAtTime(0.0001, now);
+        gain1.gain.linearRampToValueAtTime(0.06, now + 0.02);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.3);
+
+        // Note 2: A5 (880.00 Hz) harmonious harmonic with smooth resonance
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880.00, now + 0.09);
+
+        gain2.gain.setValueAtTime(0.0001, now + 0.09);
+        gain2.gain.linearRampToValueAtTime(0.08, now + 0.11);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.70);
+
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.09);
+        osc2.stop(now + 0.72);
+      } catch (err) {
+        console.warn("Audio chime playback blocked or unavailable:", err);
+      }
+    }
+
+    // ==========================================
+    // MOBILE TOUCH PULL-TO-REFRESH GESTURE
+    // ==========================================
+    function setupPullToRefresh() {
+      const container = document.getElementById('queuePanelContainer');
+      const indicator = document.getElementById('pullToRefreshIndicator');
+      const arrow = document.getElementById('pullIndicatorArrow');
+      const text = document.getElementById('pullIndicatorText');
+      if (!container || !indicator || !arrow || !text) return;
+
+      let startY = 0;
+      let pullDistance = 0;
+      let isPulling = false;
+      const PULL_THRESHOLD = 70;
+
+      function getActiveScrollView() {
+        if (currentQueueTab === 'staging') return document.getElementById('stagingQueueView');
+        if (currentQueueTab === 'inquiries') return document.getElementById('liveInquiriesView');
+        if (currentQueueTab === 'analytics') return document.getElementById('analyticsDashboardView');
+        return null;
+      }
+
+      container.addEventListener('touchstart', (e) => {
+        const activeView = getActiveScrollView();
+        if (activeView && activeView.scrollTop <= 2 && e.touches.length === 1) {
+          startY = e.touches[0].clientY;
+          isPulling = false;
+          pullDistance = 0;
+        } else {
+          startY = 0;
+        }
+      }, { passive: true });
+
+      container.addEventListener('touchmove', (e) => {
+        if (!startY || e.touches.length !== 1) return;
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - startY;
+
+        const activeView = getActiveScrollView();
+        if (deltaY > 0 && (!activeView || activeView.scrollTop <= 0)) {
+          isPulling = true;
+          // Smooth damped pull resistance
+          pullDistance = Math.min(deltaY * 0.45, 110);
+          indicator.classList.remove('hidden');
+          indicator.style.transform = `translate(-50%, ${Math.min(pullDistance, 45)}px)`;
+
+          if (pullDistance >= PULL_THRESHOLD) {
+            arrow.style.transform = 'rotate(180deg)';
+            text.textContent = 'Release to sync';
+            indicator.firstElementChild.classList.add('border-emerald-500/50', 'text-emerald-300');
+            indicator.firstElementChild.classList.remove('border-bronze-500/40', 'text-bronze-300');
+            if (navigator.vibrate && !indicator.dataset.vibrated) {
+              navigator.vibrate(12);
+              indicator.dataset.vibrated = 'true';
+            }
+          } else {
+            arrow.style.transform = 'rotate(0deg)';
+            text.textContent = 'Pull down to refresh';
+            indicator.firstElementChild.classList.remove('border-emerald-500/50', 'text-emerald-300');
+            indicator.firstElementChild.classList.add('border-bronze-500/40', 'text-bronze-300');
+            delete indicator.dataset.vibrated;
+          }
+
+          if (e.cancelable) e.preventDefault();
+        }
+      }, { passive: false });
+
+      const endPull = () => {
+        if (!isPulling) {
+          startY = 0;
+          return;
+        }
+        delete indicator.dataset.vibrated;
+        if (pullDistance >= PULL_THRESHOLD) {
+          arrow.style.transform = 'rotate(0deg)';
+          text.textContent = 'Syncing...';
+          handleForceSync();
+          setTimeout(() => {
+            indicator.style.transform = 'translate(-50%, -40px)';
+            setTimeout(() => {
+              indicator.classList.add('hidden');
+              indicator.style.transform = '';
+              text.textContent = 'Pull down to refresh';
+            }, 200);
+          }, 600);
+        } else {
+          indicator.style.transform = 'translate(-50%, -40px)';
+          setTimeout(() => {
+            indicator.classList.add('hidden');
+            indicator.style.transform = '';
+            arrow.style.transform = 'rotate(0deg)';
+          }, 200);
+        }
+        isPulling = false;
+        startY = 0;
+        pullDistance = 0;
+      };
+
+      container.addEventListener('touchend', endPull, { passive: true });
+      container.addEventListener('touchcancel', endPull, { passive: true });
+    }
 
     function updateQueueFooter() {
       const note = document.getElementById('queueFooterNote');
@@ -1938,6 +2210,9 @@ Applied Enhancements:
       });
     }
 
+    let knownLeadSignatures = new Set();
+    let hasCompletedInitialLeadFetch = false;
+
     async function fetchLiveInquiries(showFeedback = false) {
       const tbody = document.getElementById('liveInquiriesBody');
       if (!tbody) return;
@@ -1962,10 +2237,12 @@ Applied Enhancements:
           });
           liveLeads = merged;
           renderLiveInquiries();
+          checkAndChimeForNewLeads();
           if (showFeedback) showToast("Live inquiries synced with Google Sheet ledger.", "success");
         } else if (localBuffer.length > 0) {
           liveLeads = localBuffer;
           renderLiveInquiries();
+          checkAndChimeForNewLeads();
           if (showFeedback) showToast(`Loaded ${localBuffer.length} inbound inquiry(s) from active buffer.`, "success");
         } else {
           liveLeads = [];
@@ -1976,9 +2253,33 @@ Applied Enhancements:
         console.warn("Inquiries sync error:", err);
         liveLeads = localBuffer;
         renderLiveInquiries();
+        checkAndChimeForNewLeads();
         if (showFeedback) showToast(localBuffer.length > 0 ? `Loaded ${localBuffer.length} inquiry(s) from active buffer.` : "Inquiries ledger reachable.", "info");
       }
       updateQueueBadge();
+    }
+
+    function checkAndChimeForNewLeads() {
+      if (!liveLeads || liveLeads.length === 0) return;
+      if (!hasCompletedInitialLeadFetch) {
+        liveLeads.forEach(lead => {
+          const key = lead.id || (lead.email + '_' + lead.timestamp) || lead.rowIndex;
+          if (key) knownLeadSignatures.add(String(key));
+        });
+        hasCompletedInitialLeadFetch = true;
+      } else {
+        let hasNewInbound = false;
+        liveLeads.forEach(lead => {
+          const key = lead.id || (lead.email + '_' + lead.timestamp) || lead.rowIndex;
+          if (key && !knownLeadSignatures.has(String(key))) {
+            hasNewInbound = true;
+            knownLeadSignatures.add(String(key));
+          }
+        });
+        if (hasNewInbound) {
+          playInboundLeadChime();
+        }
+      }
     }
 
     function getLeadStatusColorClass(status) {
@@ -2105,6 +2406,11 @@ Applied Enhancements:
     }
 
     function handleForceSync() {
+      if (!navigator.onLine) {
+        showToast("Offline: actions are buffered locally until connection is restored.", "info");
+        updateQueueBadge();
+        return;
+      }
       if (currentQueueTab === 'analytics') {
         fetchAnalytics(currentAnalyticsDays, true);
       } else if (currentQueueTab === 'inquiries') {
