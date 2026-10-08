@@ -136,21 +136,33 @@ A native PowerShell operator script located at `scripts/Sync-StagingQueue.ps1`:
 
 ---
 
-## 6. Execution Roadmap & Tasks
+## 6. Execution Roadmap & Completed Milestones
+ 
+1. **[COMPLETED] Step 1: Webhook Update (`gas-drive-ingestion/Code.js`)**:
+   - Implemented `SUBMIT_STAGING_REQUEST`, `GET_STAGING_QUEUE`, and `UPDATE_STAGING_STATUS`.
+   - Added risk-heuristic auto-detection (`REQUIRES_2STEP` / `EXPEDITED`).
+   - Implemented sovereign email dispatch via `agency@eyeofruenterprisesllc.com` on Google Workspace (`jeremy@`).
+2. **[COMPLETED] Step 2: Concierge UI Upgrade (`concierge.html`)**:
+   - `approveDiff()` dispatches structured payloads and detects sensitive updates.
+   - Dynamic `fetchStagingQueue()` loads live statuses (`PENDING_REVIEW`, `EXPEDITED`, `REQUIRES_2STEP`, `DEPLOYED`, `REJECTED`).
+   - Wired auto-polling (35s foreground cadence) and pull-to-refresh.
+3. **[COMPLETED] Step 3: Operator Script Authoring (`scripts/Sync-StagingQueue.ps1`)**:
+   - Interactive terminal diff viewer with ANSI highlights and 1-key triage actions.
+4. **[COMPLETED] Step 4: Sovereign Workspace Migration**:
+   - Migrated backend infrastructure from consumer Gmail to corporate Google Workspace (`eyeofruenterprisesllc.com`).
+   - Live HTML diff email delivery verified to `agency@eyeofruenterprisesllc.com`.
+   - Implemented modal backdrop click-to-close UX and tuned sensitivity regex.
 
-1. **Step 1: Webhook Update (`gas-drive-ingestion/Code.js`)**:
-   - Implement `SUBMIT_STAGING_REQUEST` and `GET_STAGING_QUEUE` actions.
-   - Implement `UPDATE_STAGING_STATUS` action.
-   - Add risk-heuristic auto-detection (`REQUIRES_2STEP`).
-   - Implement email dispatch with standard & 2-step alert templates.
-   - Implement client deployment confirmation email dispatch.
-2. **Step 2: Concierge UI Upgrade (`concierge.html`)**:
-   - Update `approveDiff()` to dispatch structured payload and detect sensitive updates.
-   - Implement `loadStagingQueue()` to fetch and render live stages dynamically from Google Sheet.
-   - Wire "Force Sync ↻" button to refresh live queue.
-3. **Step 3: Operator Script Authoring (`scripts/Sync-StagingQueue.ps1`)**:
-   - Create interactive PowerShell intake and triage utility.
-4. **Step 4: End-to-End Testing & Verification**:
-   - Test standard change submission.
-   - Test sensitive/high-risk change (triggers 2-step alert).
-   - Test queue refresh in `concierge.html`.
+---
+
+## 7. Future Roadmap: Master Multi-Client Queue Command Center
+
+To pick up in future development sessions:
+
+1. **Master Multi-Queue Aggregator View**:
+   - Create a centralized agency dashboard that aggregates pending staging proposals across *all* active client ventures in a single unified view.
+   - Live status filters: `Pending Review`, `Expedited (24H SLA)`, `Requires 2-Step Call`, `Deployed`, `Rejected`.
+2. **Automated "Approve & Apply" Code Bridge**:
+   - Build a fluid bridge where selecting `[Approve]` triggers Antigravity code generation to automatically mutate target files, run `npm run build`, and push to Cloudflare Pages without manual file editing.
+3. **Admin & Client Identity Onboarding Modal**:
+   - Replace default `authorized-client@` placeholder with a structured onboarding intake profile (Submitter Name, Contact Email, Venture Role) persisted in `localStorage`.

@@ -15,8 +15,13 @@ This is your personal checklist of features that have been built and are waiting
   - **Verification 1:** Ensure the UI renders correctly and looks clean/professional.
   - **Verification 2:** Check that the "Page Focus" section is no longer an empty textbox, but rather a dynamic checklist (e.g., "We found 12 pages...") with Select All/Deselect functionality based on the AI's URL extraction.
 
-## Upcoming (Next Development Phases)
+## Eye Of Ru AI Concierge & Staging Queue (Current Checkpoint)
 
-- [x] **Review the Global Sidebar Navigation Layout**
-- [x] **Test the PDF Proposal Generator**
-- [ ] **Test the Photo Studio Color Correction Pipeline** (Not yet built - planned for next session)
+- [x] **Universal Client Webhook & Drive Hierarchy**: Sovereign Google Workspace backend live on `eyeofruenterprisesllc.com` (`AKfycbwu...`).
+- [x] **Email Alert Pipeline**: Native HTML diff emails dispatch to `agency@eyeofruenterprisesllc.com` on submission.
+- [x] **Modal Backdrop Click-to-Close UX**: Modal dialogs close on backdrop click in `index.html`.
+- [x] **Sensitivity Regex Tuning**: Specific operational phrases tuned to eliminate false 2-step call flags.
+- [ ] **Master Multi-Client Staging Queue Dashboard (Future Roadmap)**:
+  - Centralized agency view aggregating staging proposals across all active client ventures.
+  - Fluid "Approve & Apply" bridge to automatically mutate repository files and push live via Antigravity CLI.
+  - Formal Admin & Client Identity onboarding profile (replaces `authorized-client@` placeholder).

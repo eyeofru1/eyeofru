@@ -295,3 +295,18 @@ To safeguard Google Drive media repositories and prevent client browser compromi
   • Neutralizes directory traversal (../) and forces extension matching detected binary type
   • Saves verified assets to Drive: Eye Of Ru Enterprises / Clients / [Client] / 02_Brand Assets & Media
 ```
+
+---
+
+## 10. Sovereign Backend Status & Master Queue Roadmap
+
+### Current Production Checkpoint:
+* **Corporate Workspace Ownership**: Google Apps Script backend runs natively inside `eyeofruenterprisesllc.com` under `jeremy@` with authorized sending via `agency@eyeofruenterprisesllc.com`.
+* **Zero Client Friction**: Dashboard users and clients submit requests anonymously (`access: ANYONE_ANONYMOUS`) with zero Google authorization prompts.
+* **Instant HTML Diff Transmissions**: Standard proposals and expedited requests trigger visual diff tables directly to `agency@eyeofruenterprisesllc.com`.
+* **Live Reflection**: Dashboard dynamic polling loads live stages (`PENDING_REVIEW`, `EXPEDITED`, `REQUIRES_2STEP`, `DEPLOYED`, `REJECTED`) from the master spreadsheet.
+
+### Future Roadmap (To Pick Up Next):
+1. **Master Multi-Client Staging Command Center**: A centralized agency view aggregating queues across multiple client websites into one unified triage pane.
+2. **Fluid "Approve & Apply" Antigravity Bridge**: Automatic translation of staged diffs into codebase edits, build testing (`npm run build`), and edge release without manual file manipulation.
+3. **Structured Admin & Client Identity Profiles**: Session onboarding layer persisting submitter name, email, and venture role to replace the default `authorized-client@` placeholder.
