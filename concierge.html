@@ -299,25 +299,37 @@
               id="tabStagingQueueBtn" 
               type="button" 
               onclick="switchQueueTab('staging')" 
-              class="px-2.5 py-1 rounded-lg border border-bronze-500/50 bg-charcoal-800 text-bronze-300 font-semibold font-mono text-[11px] transition shadow-sm whitespace-nowrap"
+              class="px-2.5 py-1 rounded-lg border border-bronze-500/50 bg-charcoal-800 text-bronze-300 font-semibold font-mono text-[11px] transition shadow-sm whitespace-nowrap inline-flex items-center gap-1.5"
               title="View air-gapped staging proposals">
-              Staging Queue
+              <span>Staging Queue</span>
+              <span id="tabStagingBadge" class="hidden items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span id="tabStagingCount">0</span>
+              </span>
             </button>
             <button 
               id="tabLiveInquiriesBtn" 
               type="button" 
               onclick="switchQueueTab('inquiries')" 
-              class="px-2.5 py-1 rounded-lg border border-charcoal-700/80 bg-charcoal-800/80 text-slate-400 hover:text-slate-200 hover:bg-charcoal-800 font-mono text-[11px] transition whitespace-nowrap"
+              class="px-2.5 py-1 rounded-lg border border-charcoal-700/80 bg-charcoal-800/80 text-slate-400 hover:text-slate-200 hover:bg-charcoal-800 font-mono text-[11px] transition whitespace-nowrap inline-flex items-center gap-1.5"
               title="View inbound customer contact inquiries">
-              Live Inquiries
+              <span>Live Inquiries</span>
+              <span id="tabInquiriesBadge" class="hidden items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="tabInquiriesCount">0</span>
+              </span>
             </button>
             <button 
               id="tabAnalyticsBtn" 
               type="button" 
               onclick="switchQueueTab('analytics')" 
-              class="px-2.5 py-1 rounded-lg border border-charcoal-700/80 bg-charcoal-800/80 text-slate-400 hover:text-slate-200 hover:bg-charcoal-800 font-mono text-[11px] transition whitespace-nowrap"
+              class="px-2.5 py-1 rounded-lg border border-charcoal-700/80 bg-charcoal-800/80 text-slate-400 hover:text-slate-200 hover:bg-charcoal-800 font-mono text-[11px] transition whitespace-nowrap inline-flex items-center gap-1.5"
               title="View website traffic and telemetry analytics">
-              Site Analytics
+              <span>Site Analytics</span>
+              <span id="tabAnalyticsBadge" class="hidden items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="tabAnalyticsCount">0</span>
+              </span>
             </button>
           </div>
           <span id="queueCountBadge" class="text-[10px] font-mono text-emerald-400 flex items-center gap-1 flex-shrink-0">
@@ -719,6 +731,7 @@
       fetchStagingQueue(false);
       fetchLiveInquiries(false);
       fetchAnalytics(7, false);
+      startDashboardPolling();
     });
 
     function toggleTheme() {
@@ -1387,8 +1400,8 @@ Applied Enhancements:
       const inquiriesView = document.getElementById('liveInquiriesView');
       const analyticsView = document.getElementById('analyticsView');
 
-      const activeClass = "px-2.5 py-1 rounded-lg border border-bronze-500/50 bg-charcoal-800 text-bronze-300 font-semibold font-mono text-[11px] transition shadow-sm whitespace-nowrap";
-      const inactiveClass = "px-2.5 py-1 rounded-lg border border-charcoal-700/80 bg-charcoal-800/80 text-slate-400 hover:text-slate-200 hover:bg-charcoal-800 font-mono text-[11px] transition whitespace-nowrap";
+      const activeClass = "px-2.5 py-1 rounded-lg border border-bronze-500/50 bg-charcoal-800 text-bronze-300 font-semibold font-mono text-[11px] transition shadow-sm whitespace-nowrap inline-flex items-center gap-1.5";
+      const inactiveClass = "px-2.5 py-1 rounded-lg border border-charcoal-700/80 bg-charcoal-800/80 text-slate-400 hover:text-slate-200 hover:bg-charcoal-800 font-mono text-[11px] transition whitespace-nowrap inline-flex items-center gap-1.5";
 
       if (stagingBtn) stagingBtn.className = (tab === 'staging') ? activeClass : inactiveClass;
       if (inquiriesBtn) inquiriesBtn.className = (tab === 'inquiries') ? activeClass : inactiveClass;
@@ -1425,7 +1438,94 @@ Applied Enhancements:
         badge.innerHTML = `<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ${liveCount} ${audienceLabel}`;
         badge.className = "text-[10px] font-mono text-emerald-400 flex items-center gap-1 flex-shrink-0";
       }
+      updateTabSignalingBadges();
     }
+
+    function updateTabSignalingBadges() {
+      // 1. Staging Queue: illuminated dot + pending count
+      const stagingBadge = document.getElementById('tabStagingBadge');
+      const stagingCount = document.getElementById('tabStagingCount');
+      if (stagingBadge && stagingCount) {
+        const pendingCount = stagedItems.filter(i => i.status !== 'DEPLOYED' && i.status !== 'REJECTED').length;
+        const countToShow = pendingCount > 0 ? pendingCount : stagedItems.length;
+        if (countToShow > 0) {
+          stagingCount.textContent = countToShow;
+          stagingBadge.classList.remove('hidden');
+          stagingBadge.classList.add('inline-flex');
+        } else {
+          stagingBadge.classList.add('hidden');
+          stagingBadge.classList.remove('inline-flex');
+        }
+      }
+
+      // 2. Live Inquiries: illuminated dot + new uncontacted leads count
+      const inqBadge = document.getElementById('tabInquiriesBadge');
+      const inqCount = document.getElementById('tabInquiriesCount');
+      if (inqBadge && inqCount) {
+        const newLeads = liveLeads.filter(l => !l.status || l.status === 'New Lead');
+        const countToShow = newLeads.length > 0 ? newLeads.length : liveLeads.length;
+        if (countToShow > 0) {
+          inqCount.textContent = countToShow;
+          inqBadge.classList.remove('hidden');
+          inqBadge.classList.add('inline-flex');
+        } else {
+          inqBadge.classList.add('hidden');
+          inqBadge.classList.remove('inline-flex');
+        }
+      }
+
+      // 3. Site Analytics: illuminated dot + live active users
+      const analyticsBadge = document.getElementById('tabAnalyticsBadge');
+      const analyticsCount = document.getElementById('tabAnalyticsCount');
+      if (analyticsBadge && analyticsCount) {
+        const activeUsers = analyticsDataCache?.kpis?.activeUsers ?? (currentAnalyticsAudience === 'unique' ? 1 : 3);
+        if (activeUsers > 0) {
+          analyticsCount.textContent = activeUsers;
+          analyticsBadge.classList.remove('hidden');
+          analyticsBadge.classList.add('inline-flex');
+        } else {
+          analyticsBadge.classList.add('hidden');
+          analyticsBadge.classList.remove('inline-flex');
+        }
+      }
+    }
+
+    let dashboardPollTimer = null;
+    const DASHBOARD_POLL_INTERVAL_MS = 35000;
+
+    function startDashboardPolling() {
+      if (dashboardPollTimer) return;
+      dashboardPollTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          fetchStagingQueue(false);
+          fetchLiveInquiries(false);
+          if (currentQueueTab === 'analytics') {
+            fetchAnalytics(currentAnalyticsDays, false);
+          }
+        }
+      }, DASHBOARD_POLL_INTERVAL_MS);
+    }
+
+    function stopDashboardPolling() {
+      if (dashboardPollTimer) {
+        clearInterval(dashboardPollTimer);
+        dashboardPollTimer = null;
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        fetchStagingQueue(false);
+        fetchLiveInquiries(false);
+        startDashboardPolling();
+      } else {
+        stopDashboardPolling();
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      stopDashboardPolling();
+    });
 
     function updateQueueFooter() {
       const note = document.getElementById('queueFooterNote');
@@ -1964,6 +2064,7 @@ Applied Enhancements:
       } catch (e) {}
 
       renderLiveInquiries();
+      updateQueueBadge();
 
       try {
         await fetch(MASTER_WEBHOOK_URL, {
