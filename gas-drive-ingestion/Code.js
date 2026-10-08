@@ -560,6 +560,65 @@ function doPost(e) {
       });
     }
 
+    // Route 11: Fetch Client Leads / Inquiries
+    else if (action === "GET_LEADS") {
+      var leadItems = getLeadItems(clientFolders, clientName);
+      return jsonResponse({
+        status: "SUCCESS",
+        action: "GET_LEADS",
+        clientName: clientName,
+        count: leadItems.length,
+        leads: leadItems
+      });
+    }
+
+    // Route 12: Update Client Lead Status
+    else if (action === "UPDATE_LEAD_STATUS") {
+      var sheetData = getOrCreateClientSheet(clientFolders, clientName);
+      var leadsSheet = sheetData.ss.getSheetByName("Leads") || sheetData.ss.getSheets()[0];
+      if (!leadsSheet) {
+        return jsonResponse({ status: "ERROR", message: "Leads sheet not found" });
+      }
+
+      var rowIndex = data.rowIndex;
+      var newStatus = data.newStatus || "Contacted";
+      var email = data.email || "";
+      var timestamp = data.timestamp || "";
+
+      var values = leadsSheet.getDataRange().getValues();
+      var targetRow = -1;
+
+      if (rowIndex && rowIndex > 1 && rowIndex <= values.length) {
+        targetRow = rowIndex;
+      } else if (email || timestamp) {
+        for (var r = values.length - 1; r >= 1; r--) {
+          var rowEmail = values[r][2] ? values[r][2].toString().toLowerCase().trim() : "";
+          var rowTimestamp = values[r][0] ? values[r][0].toString() : "";
+          if (email && rowEmail === email.toLowerCase().trim()) {
+            targetRow = r + 1;
+            break;
+          }
+          if (timestamp && rowTimestamp === timestamp.toString()) {
+            targetRow = r + 1;
+            break;
+          }
+        }
+      }
+
+      if (targetRow > 1) {
+        leadsSheet.getRange(targetRow, 7).setValue(newStatus);
+        return jsonResponse({
+          status: "SUCCESS",
+          action: "UPDATE_LEAD_STATUS",
+          clientName: clientName,
+          rowIndex: targetRow,
+          newStatus: newStatus
+        });
+      }
+
+      return jsonResponse({ status: "ERROR", message: "Matching lead row not found in Leads sheet" });
+    }
+
     return jsonResponse({ status: "ERROR", message: "Unknown action: " + action });
 
   } catch (err) {
@@ -803,6 +862,37 @@ function getStagingQueueItems(clientFolders, clientName) {
   return items;
 }
 
+/**
+ * Helper to fetch all rows from Leads sheet
+ */
+function getLeadItems(clientFolders, clientName) {
+  var sheetData = getOrCreateClientSheet(clientFolders, clientName);
+  var leadsSheet = sheetData.ss.getSheetByName("Leads") || sheetData.ss.getSheets()[0];
+  if (!leadsSheet) return [];
+
+  var values = leadsSheet.getDataRange().getValues();
+  if (values.length <= 1) return [];
+
+  var leads = [];
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    if (!row[0] && !row[1] && !row[2]) continue;
+
+    leads.push({
+      rowIndex: i + 1,
+      timestamp: row[0],
+      fullName: row[1] || "",
+      email: row[2] || "",
+      phone: row[3] || "",
+      subject: row[4] || "",
+      message: row[5] || "",
+      status: row[6] || "New Lead",
+      turnstile: row[7] || ""
+    });
+  }
+  return leads;
+}
+
 function escapeHtml(text) {
   if (!text) return "";
   return text.toString()
@@ -864,9 +954,22 @@ function doGet(e) {
     });
   }
 
+  if (e && e.parameter && e.parameter.action === "GET_LEADS") {
+    var clientName = sanitizeName(e.parameter.clientName || "General Client");
+    var clientFolders = getClientFolderTree(clientName);
+    var leadItems = getLeadItems(clientFolders, clientName);
+    return jsonResponse({
+      status: "SUCCESS",
+      action: "GET_LEADS",
+      clientName: clientName,
+      count: leadItems.length,
+      leads: leadItems
+    });
+  }
+
   var statusInfo = {
     status: "ACTIVE",
-    version: "1.2.0",
+    version: "1.3.0",
     service: "Eye Of Ru Ingestion & Leads Webhook",
     activeUser: Session.getActiveUser().getEmail(),
     availableAliases: aliases,
