@@ -143,7 +143,7 @@
 
       <!-- Suggested Starter Prompts -->
       <div class="px-3.5 py-2 bg-charcoal-900/50 border-t border-charcoal-800/80 flex items-center gap-2 overflow-x-auto text-[10px] font-mono text-slate-400">
-        <button type="button" onclick="useQuickPrompt('Update [Section]: Change [Current Text] to [Proposed Text]')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load adjustment template into prompt box">
+        <button type="button" onclick="useQuickPrompt('Please adjust the site content as follows: ')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load content adjustment direction cue">
           + Adjust Template
         </button>
         <button type="button" onclick="useQuickPrompt('Update Friday operating hours to close at 17:00 EST')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load operating hours prompt into prompt box">
@@ -406,16 +406,24 @@
 
         const q = query.toLowerCase();
 
-        // 0. Template / copy adjustment match
-        if (q.includes("change") && q.includes("to")) {
+        // 0. Site content / template adjustment direction cue or natural explanation
+        if (q.includes("adjust") || q.includes("change") || q.includes("modify") || q.includes("revise") || q.includes("update content")) {
           let section = "Site Content";
-          let currentVal = "[Current Baseline]";
-          let proposedVal = query;
+          let currentVal = "[Production Baseline]";
+          let proposedVal = query.replace(/^please\s+adjust\s+(the\s+)?site\s+content\s+(as\s+follows:\s*)?/i, "").trim();
 
+          if (q.includes("hero")) section = "Hero Section";
+          else if (q.includes("manifesto") || q.includes("thesis")) section = "Studio Thesis";
+          else if (q.includes("footer")) section = "Footer";
+          else if (q.includes("discipline")) section = "Core Disciplines";
+          else if (q.includes("contact") || q.includes("inquiry")) section = "Inquiry Portal";
+
+          // If formatted like "Update Hero: Change ... to ..."
           if (query.toLowerCase().startsWith("update") && query.includes(":")) {
             section = query.split(":")[0].replace(/^update\s+/i, "").trim();
           }
 
+          // If the prompt includes "change X to Y"
           const changeMatch = query.match(/change\s+["']?([^"']+)["']?\s+to\s+["']?([^"'\n]+)["']?/i);
           if (changeMatch) {
             currentVal = changeMatch[1].trim();
@@ -430,7 +438,7 @@
             clientRationale: query
           };
           renderDiffProposal(activeProposal);
-          appendChatMessage("CONCIERGE AGENT", `Generated a live diff proposal for "${section}". Inspect the comparison in the staging pane.`);
+          appendChatMessage("CONCIERGE AGENT", `Generated a live diff proposal for "${section}" based on your direction. Inspect the comparison in the staging pane.`);
 
         // 1. Venture/Portfolio check (takes precedence so 'quantum auditing' does not collide with CWV audit)
         } else if (q.includes("venture") || q.includes("project") || q.includes("portfolio") || q.includes("quantum")) {
