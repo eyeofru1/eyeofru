@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [string]$ClientName = "Eye Of Ru Enterprises",
-    [string]$WebhookUrl = "https://script.google.com/macros/s/AKfycbxd4tTo4oWLRYo-j6w3M0Lbz0qCUPIckDxcn_uqimr7VAPf8IeiqeNXBmau_o91kWztzg/exec"
+    [string]$WebhookUrl = "https://script.google.com/macros/s/AKfycbwvInc8tbMosqj2AHjGx-gfCWSkQ9j36AKwsFNVSg9JLxOwzotAnaLqZn2cj94rYxrcUA/exec"
 )
 
 $ErrorActionPreference = "Stop"

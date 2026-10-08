@@ -108,6 +108,7 @@ function doPost(e) {
         "<p style='margin:6px 0;'><strong>Message:</strong></p>" +
         "<blockquote style='margin:8px 0 0 0;padding-left:12px;border-left:3px solid #c89b4e;color:#cbd5e1;'>" + message + "</blockquote>" +
         "</div>" +
+        (email ? "<div style='margin:14px 0;'><a href='mailto:" + encodeURIComponent(email) + "?subject=Re:%20" + encodeURIComponent(subject) + "' style='background:#c89b4e;color:#0d0f12;text-decoration:none;font-weight:bold;font-size:12px;padding:9px 16px;border-radius:6px;display:inline-block;'>Reply to " + escapeHtml(fullName) + " (" + escapeHtml(email) + ") ↗</a></div>" : "") +
         "<p style='font-size:12px;color:#64748b;'>Hit 'Reply' directly to respond to " + fullName + ".</p>" +
         "<div style='margin-top:20px;padding-top:12px;border-top:1px solid #2c3543;font-size:11px;color:#64748b;'>" +
         "Logged to Google Sheet: <a href='" + sheetData.ss.getUrl() + "' style='color:#c89b4e;'>View Lead Sheet</a>" +
@@ -630,26 +631,61 @@ function doPost(e) {
  * Sends email using GmailApp forcing agency@eyeofruenterprisesllc.com alias
  */
 function sendAgencyEmail(recipient, customerEmail, subject, htmlBody) {
-  var targetAlias = "agency@eyeofruenterprisesllc.com";
-  var options = {
-    name: "Eye Of Ru Enterprises",
-    replyTo: customerEmail || targetAlias,
-    htmlBody: htmlBody
-  };
+  try {
+    var targetAlias = "agency@eyeofruenterprisesllc.com";
 
-  var aliases = GmailApp.getAliases();
-  var fromUsed = Session.getActiveUser().getEmail();
+    // Prevent Gmail spam classification: never set reply-to to reserved dummy/test domains (RFC 2606)
+    var safeReplyTo = targetAlias;
+    if (customerEmail && customerEmail.indexOf("@") > -1) {
+      var emailDomain = customerEmail.split("@")[1].toLowerCase();
+      var isDummy = (emailDomain === "example.com" || emailDomain === "test.com" || emailDomain === "invalid" || emailDomain.indexOf("example") > -1);
+      if (!isDummy) {
+        safeReplyTo = customerEmail;
+      }
+    }
 
-  if (aliases && aliases.indexOf(targetAlias) > -1) {
-    options.from = targetAlias;
-    fromUsed = targetAlias;
-  } else if (aliases && aliases.length > 0) {
-    options.from = aliases[0];
-    fromUsed = aliases[0];
+    var options = {
+      name: "Eye Of Ru Enterprises",
+      replyTo: safeReplyTo,
+      htmlBody: htmlBody
+    };
+
+    var aliases = [];
+    try { aliases = GmailApp.getAliases(); } catch (aErr) {}
+    var fromUsed = "";
+    try { fromUsed = Session.getActiveUser().getEmail(); } catch (uErr) {}
+
+    if (aliases && aliases.indexOf(targetAlias) > -1) {
+      options.from = targetAlias;
+      fromUsed = targetAlias;
+    } else if (aliases && aliases.length > 0) {
+      options.from = aliases[0];
+      fromUsed = aliases[0];
+    }
+
+    try {
+      GmailApp.sendEmail(recipient, subject, "", options);
+      return { success: true, fromUsed: fromUsed };
+    } catch (gErr) {
+      // Fallback to MailApp if GmailApp requires extra interactive consent
+      try {
+        MailApp.sendEmail({
+          to: recipient,
+          subject: subject,
+          htmlBody: htmlBody,
+          name: "Eye Of Ru Enterprises",
+          replyTo: customerEmail || recipient
+        });
+        return { success: true, fromUsed: "MailApp" };
+      } catch (mErr) {
+        console.warn("Mail dispatch error:", mErr);
+        return { success: false, error: mErr.toString() };
+      }
+    }
+  } catch (err) {
+    console.warn("sendAgencyEmail general exception:", err);
+    return { success: false, error: err.toString() };
   }
-
-  GmailApp.sendEmail(recipient, subject, "", options);
-  return { success: true, fromUsed: fromUsed };
 }
 
 /**
