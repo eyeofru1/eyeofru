@@ -127,25 +127,74 @@ function doPost(e) {
       });
     }
 
-    // Route 5: Upload Brand Assets / Media
+    // Route 5: Upload Brand Assets / Media (Hardened 4-Layer Inspection)
     else if (action === "UPLOAD_ASSET") {
-      var assetName = data.fileName || ("Asset_" + new Date().getTime() + (data.mimeType && data.mimeType.indexOf("png") > -1 ? ".png" : (data.mimeType && data.mimeType.indexOf("webp") > -1 ? ".webp" : ".jpg")));
-      var mimeType = data.mimeType || "image/jpeg";
       var rawBase64 = data.base64Data || data.base64 || data.data || "";
+      if (typeof rawBase64 !== "string" || !rawBase64.trim()) {
+        return jsonResponse({ status: "ERROR", message: "Missing or invalid base64 image payload." });
+      }
+
+      // Pre-decode payload size check (25MB binary is ~33.5MB base64)
+      if (rawBase64.length > 35 * 1024 * 1024) {
+        return jsonResponse({
+          status: "ERROR",
+          message: "Payload size exceeds maximum allowed upload threshold (25MB limit)."
+        });
+      }
+
       if (rawBase64.indexOf("base64,") > -1) {
         rawBase64 = rawBase64.split("base64,")[1];
       }
-      var assetBytes = Utilities.base64Decode(rawBase64);
-      var assetBlob = Utilities.newBlob(assetBytes, mimeType, assetName);
+      rawBase64 = rawBase64.replace(/\s+/g, "");
 
+      var assetBytes;
+      try {
+        assetBytes = Utilities.base64Decode(rawBase64);
+      } catch (decodeErr) {
+        return jsonResponse({
+          status: "ERROR",
+          message: "Base64 decode failed: corrupted or malformed byte stream."
+        });
+      }
+
+      // Quota Guard: Enforce decoded size <= 25MB
+      var maxDecodedBytes = 25 * 1024 * 1024;
+      if (!assetBytes || assetBytes.length === 0) {
+        return jsonResponse({ status: "ERROR", message: "Empty byte payload received." });
+      }
+      if (assetBytes.length > maxDecodedBytes) {
+        return jsonResponse({
+          status: "ERROR",
+          message: "Security violation: Decoded asset (" + (assetBytes.length / (1024 * 1024)).toFixed(2) + "MB) exceeds maximum Apps Script ceiling (25MB)."
+        });
+      }
+
+      // Layer 4 Binary Inspection: Verify magic bytes
+      var detectedType = inspectImageBinaryHeader(assetBytes);
+      if (!detectedType) {
+        return jsonResponse({
+          status: "ERROR",
+          message: "Security violation: uploaded file binary signature does not match an approved image format."
+        });
+      }
+
+      // Filename & Extension Sanitization: Enforce verified binary extension
+      var originalFileName = data.fileName || ("Asset_" + new Date().getTime());
+      var safeFileName = sanitizeAssetFileName(originalFileName, detectedType.extension);
+      var safeMimeType = detectedType.mimeType;
+
+      var assetBlob = Utilities.newBlob(assetBytes, safeMimeType, safeFileName);
       var assetFile = clientFolders.brand.createFile(assetBlob);
       assetFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
       return jsonResponse({
         status: "SUCCESS",
         action: "UPLOAD_ASSET",
-        fileName: assetName,
-        mimeType: mimeType,
+        fileName: safeFileName,
+        originalFileName: originalFileName,
+        mimeType: safeMimeType,
+        detectedFormat: detectedType.format,
+        fileSize: assetBytes.length,
         fileId: assetFile.getId(),
         fileUrl: assetFile.getUrl(),
         downloadUrl: assetFile.getDownloadUrl(),
@@ -871,6 +920,72 @@ function sendClientDeploymentConfirmation(clientEmail, clientName, targetSection
     "</div>";
 
   return sendAgencyEmail(clientEmail, "agency@eyeofruenterprisesllc.com", subject, html);
+}
+
+/**
+ * Detects and validates binary image format from raw Apps Script byte array.
+ * Converts Java signed bytes (-128..127) to unsigned (0..255).
+ * Returns { format: string, mimeType: string, extension: string } or null.
+ */
+function inspectImageBinaryHeader(bytes) {
+  if (!bytes || bytes.length < 12) {
+    return null;
+  }
+
+  function u8(index) {
+    var b = bytes[index];
+    return b < 0 ? b + 256 : b;
+  }
+
+  // 1. JPEG: FF D8 FF
+  if (u8(0) === 0xFF && u8(1) === 0xD8 && u8(2) === 0xFF) {
+    return { format: "JPEG", mimeType: "image/jpeg", extension: "jpg" };
+  }
+
+  // 2. PNG: 89 50 4E 47
+  if (u8(0) === 0x89 && u8(1) === 0x50 && u8(2) === 0x4E && u8(3) === 0x47) {
+    return { format: "PNG", mimeType: "image/png", extension: "png" };
+  }
+
+  // 3. GIF: GIF8 (0x47, 0x49, 0x46, 0x38)
+  if (u8(0) === 0x47 && u8(1) === 0x49 && u8(2) === 0x46 && u8(3) === 0x38) {
+    return { format: "GIF", mimeType: "image/gif", extension: "gif" };
+  }
+
+  // 4. WebP: RIFF at 0..3 and WEBP at 8..11
+  if (u8(0) === 0x52 && u8(1) === 0x49 && u8(2) === 0x46 && u8(3) === 0x46 &&
+      u8(8) === 0x57 && u8(9) === 0x45 && u8(10) === 0x42 && u8(11) === 0x50) {
+    return { format: "WEBP", mimeType: "image/webp", extension: "webp" };
+  }
+
+  // 5. AVIF: 'ftyp' at 4..7 and 'avif' / 'avis' at 8..11
+  if (u8(4) === 0x66 && u8(5) === 0x74 && u8(6) === 0x79 && u8(7) === 0x70) {
+    var brand = String.fromCharCode(u8(8), u8(9), u8(10), u8(11));
+    if (brand === "avif" || brand === "avis") {
+      return { format: "AVIF", mimeType: "image/avif", extension: "avif" };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Sanitizes asset file name:
+ * - Neutralizes directory traversal (../, ..\)
+ * - Strips null bytes and control chars
+ * - Eliminates multi-extension masking
+ * - Enforces extension matching detected binary signature
+ */
+function sanitizeAssetFileName(originalName, detectedExtension) {
+  var name = (originalName || "").toString();
+  name = name.replace(/[\0\x00-\x1f\x7f]/g, "");
+  name = name.replace(/[\/\\]/g, "_").replace(/\.\.+/g, "");
+  var baseName = name.replace(/\.[^.]+$/, "");
+  baseName = baseName.replace(/[^a-zA-Z0-9_\-]/g, "_").replace(/^_+|_+$/g, "").replace(/_+/g, "_");
+  if (!baseName) {
+    baseName = "Asset_" + new Date().getTime();
+  }
+  return baseName + "." + (detectedExtension || "jpg");
 }
 
 /**

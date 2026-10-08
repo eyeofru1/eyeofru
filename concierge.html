@@ -45,22 +45,34 @@
 
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
+      if (!container) return;
       const toast = document.createElement('div');
-      const isSuccess = type === 'success';
       
-      toast.className = `transform transition-all duration-300 translate-y-4 opacity-0 pointer-events-auto px-4 py-3 rounded-xl shadow-2xl border text-xs font-mono flex items-center gap-3 z-50 ${
-        isSuccess ? 'bg-emerald-950 border-emerald-500/30 text-emerald-200' : 'bg-charcoal-800 border-bronze-500/30 text-bronze-200'
-      }`;
+      let themeClass = 'bg-charcoal-800 border-bronze-500/30 text-bronze-200';
+      let icon = 'ℹ';
+      let iconColor = 'text-bronze-400';
+
+      if (type === 'success') {
+        themeClass = 'bg-emerald-950/90 border-emerald-500/40 text-emerald-200';
+        icon = '✓';
+        iconColor = 'text-emerald-400';
+      } else if (type === 'error') {
+        themeClass = 'bg-rose-950/90 border-rose-500/40 text-rose-200';
+        icon = '✕';
+        iconColor = 'text-rose-400';
+      } else if (type === 'warning') {
+        themeClass = 'bg-amber-950/90 border-amber-500/40 text-amber-200';
+        icon = '⚠';
+        iconColor = 'text-amber-400';
+      }
       
+      toast.className = `transform transition-all duration-300 translate-y-4 opacity-0 pointer-events-auto px-4 py-3 rounded-xl shadow-2xl border text-xs font-mono flex items-center gap-3 z-50 ${themeClass}`;
       toast.innerHTML = `
-        <span class="${isSuccess ? 'text-emerald-400' : 'text-bronze-400'} text-lg leading-none">
-          ${isSuccess ? '✓' : 'ℹ'}
-        </span>
+        <span class="${iconColor} text-lg leading-none">${icon}</span>
         <span>${message}</span>
       `;
       
       container.appendChild(toast);
-      
       requestAnimationFrame(() => {
         toast.classList.remove('translate-y-4', 'opacity-0');
       });
@@ -68,7 +80,7 @@
       setTimeout(() => {
         toast.classList.add('opacity-0', 'translate-y-2');
         setTimeout(() => toast.remove(), 300);
-      }, 4000);
+      }, 4500);
     }
   </script>
 </head>
@@ -207,7 +219,7 @@
         <div id="attachmentTray" class="hidden mb-2 p-2 rounded-xl bg-charcoal-950/70 border border-charcoal-800 flex flex-col gap-1.5 text-[10px] font-mono max-h-32 overflow-y-auto"></div>
 
         <!-- Hidden Photo File Input -->
-        <input type="file" id="photoFileInput" accept="image/*" multiple class="hidden" onchange="handleFileInputChange(event)">
+        <input type="file" id="photoFileInput" accept="image/png,image/jpeg,image/webp,image/avif,image/gif" multiple class="hidden" onchange="handleFileInputChange(event)">
 
         <div class="relative w-full flex items-center">
           <!-- Attachment Button -->
@@ -623,33 +635,158 @@
       e.target.value = '';
     }
 
-    function processPhotoFiles(files) {
-      const imageFiles = files.filter(f => f.type && f.type.startsWith('image/'));
-      if (imageFiles.length === 0) {
-        showToast("Please select valid image files (.png, .jpg, .webp, .avif).", "info");
+    // Layer 1: Binary Magic Bytes Inspection (ArrayBuffer slice)
+    async function validateImageMagicBytes(file) {
+      try {
+        const buffer = await file.slice(0, 24).arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        if (bytes.length < 4) return null;
+
+        // JPEG: FF D8 FF
+        if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'jpeg';
+
+        // PNG: 89 50 4E 47
+        if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return 'png';
+
+        // WebP: RIFF at 0..3 and WEBP at 8..11
+        if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+            bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+          return 'webp';
+        }
+
+        // GIF: GIF8 (0x47, 0x49, 0x46, 0x38)
+        if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38) return 'gif';
+
+        // AVIF: ftyp at offset 4, brand 'avif' or 'avis' at offset 8
+        if (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
+          const brand = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
+          if (brand === 'avif' || brand === 'avis') return 'avif';
+        }
+
+        return null; // Explicitly reject SVGs, executables, scripts, HTML, and unrecognized binaries
+      } catch (err) {
+        return null;
+      }
+    }
+
+    // Layer 2: In-Memory Bitmap Decode & Dimension Ceiling Test
+    async function validateImageDecode(file) {
+      const MAX_DIM = 8192;
+
+      // Primary standard decoder: createImageBitmap
+      if (typeof createImageBitmap === 'function') {
+        try {
+          const bitmap = await createImageBitmap(file);
+          try {
+            const { width, height } = bitmap;
+            if (width > MAX_DIM || height > MAX_DIM) {
+              return { valid: false, error: `Dimensions exceed maximum allowed ${MAX_DIM}×${MAX_DIM}px (${width}×${height}px)` };
+            }
+            return { valid: true, width, height };
+          } finally {
+            bitmap.close(); // Immediate release of decoded RAM buffer prevents iOS WebKit memory crash
+          }
+        } catch (e) {
+          // Fall back to Image() path in case of WebKit/AVIF decoder quirk
+        }
+      }
+
+      // Fallback decoder: new Image() + URL.createObjectURL
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url); // Memory cleanup
+          if (img.naturalWidth > MAX_DIM || img.naturalHeight > MAX_DIM) {
+            resolve({ valid: false, error: `Dimensions exceed maximum allowed ${MAX_DIM}×${MAX_DIM}px (${img.naturalWidth}×${img.naturalHeight}px)` });
+          } else {
+            resolve({ valid: true, width: img.naturalWidth, height: img.naturalHeight });
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url); // Memory cleanup on failure
+          resolve({ valid: false, error: 'File is corrupted or unrenderable' });
+        };
+        img.src = url;
+      });
+    }
+
+    // Layer 3: Quota Guard & Photo Validation Orchestrator
+    async function processPhotoFiles(files) {
+      const MAX_PHOTOS = 5;
+      const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+      const MAX_BATCH_SIZE = 35 * 1024 * 1024; // 35MB
+
+      if (!files || files.length === 0) return;
+
+      const currentCount = attachedPhotos.length;
+      if (currentCount >= MAX_PHOTOS) {
+        showToast(`Maximum photo limit reached (${MAX_PHOTOS} photos per proposal).`, 'warning');
         return;
       }
 
-      let processed = 0;
-      imageFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          attachedPhotos.push({
-            id: 'photo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-            name: file.name,
-            size: file.size,
-            sizeFormatted: formatFileSize(file.size),
-            type: file.type || 'image/jpeg',
-            dataUrl: event.target.result
-          });
-          processed++;
-          if (processed === imageFiles.length) {
-            renderAttachmentTray();
-            showToast(`Attached ${imageFiles.length} photo${imageFiles.length > 1 ? 's' : ''}.`, "success");
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      const allowedToProcess = files.slice(0, MAX_PHOTOS - currentCount);
+      if (files.length > allowedToProcess.length) {
+        showToast(`Only ${allowedToProcess.length} additional photo(s) accepted (limit ${MAX_PHOTOS}).`, 'warning');
+      }
+
+      let currentBatchTotal = attachedPhotos.reduce((sum, p) => sum + p.size, 0);
+      let attachedCount = 0;
+
+      for (const file of allowedToProcess) {
+        // 1. File Size Ceiling
+        if (file.size > MAX_FILE_SIZE) {
+          showToast(`"${file.name}" exceeds the 15MB limit (${formatFileSize(file.size)}).`, 'error');
+          continue;
+        }
+
+        // 2. Batch Total Ceiling
+        if (currentBatchTotal + file.size > MAX_BATCH_SIZE) {
+          showToast(`Cannot attach "${file.name}": Total batch size would exceed 35MB.`, 'error');
+          continue;
+        }
+
+        // 3. Binary Magic Bytes Inspection (Layer 1)
+        const detectedFormat = await validateImageMagicBytes(file);
+        if (!detectedFormat) {
+          showToast(`"${file.name}": Rejected. Only genuine JPEG, PNG, WebP, AVIF, and GIF files are allowed.`, 'error');
+          continue;
+        }
+
+        // 4. In-Memory Decode & Anti-Bomb Check (Layer 2)
+        const decodeResult = await validateImageDecode(file);
+        if (!decodeResult.valid) {
+          showToast(`"${file.name}": Rejected. ${decodeResult.error}.`, 'error');
+          continue;
+        }
+
+        // Safe: Convert verified file to DataURL for preview tray and staging payload
+        await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            attachedPhotos.push({
+              id: 'photo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+              name: file.name,
+              size: file.size,
+              sizeFormatted: formatFileSize(file.size),
+              type: 'image/' + (detectedFormat === 'jpeg' ? 'jpeg' : detectedFormat),
+              detectedFormat: detectedFormat,
+              width: decodeResult.width,
+              height: decodeResult.height,
+              dataUrl: e.target.result
+            });
+            currentBatchTotal += file.size;
+            attachedCount++;
+            resolve();
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (attachedCount > 0) {
+        renderAttachmentTray();
+        showToast(`Attached ${attachedCount} verified photo${attachedCount > 1 ? 's' : ''}.`, 'success');
+      }
     }
 
     function removeAttachedPhoto(id) {

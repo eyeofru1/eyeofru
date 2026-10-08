@@ -263,3 +263,35 @@ For desktop operators and background mobile PWA instances, immediate auditory aw
    * Audio context is unlocked lazily upon the user's first interactive gesture (`pointerdown`, `touchstart`, `click`, `keydown`).
    * State is persisted across sessions in `localStorage` (`eyeofru_audio_muted`).
    * A discreet `🔔` / `🔕` toggle button in the navigation header allows clients to mute sounds with one tap.
+
+---
+
+## 9. 4-Layer Image Security & Anti-Corruption Pipeline
+
+To safeguard Google Drive media repositories and prevent client browser compromise, all uploaded photos pass through a rigorous 4-layer defense-in-depth pipeline before ingestion:
+
+```
+[ User Selects / Drops File ]
+              │
+              ▼
+  Layer 1: Binary Magic Bytes Inspection (ArrayBuffer slice)
+  • Inspects first 24 raw bytes: JPEG (FF D8 FF), PNG (89 50 4E 47), WebP (RIFF/WEBP), AVIF (ftypavif), GIF (GIF8)
+  • Rejects dangerous SVGs (preventing Stored XSS) and disguised executables/scripts
+              │
+              ▼
+  Layer 2: In-Memory Bitmap Decode & Anti-Bomb Guard (createImageBitmap)
+  • Proves bitmap renderability (detects truncated byte streams and corrupted metadata)
+  • Enforces dimension ceiling (<=8,192 × 8,192 px) to prevent RAM decompression crashes
+  • Calls bitmap.close() in try...finally block to prevent mobile Safari memory leaks
+              │
+              ▼
+  Layer 3: Strict Quotas & Processing Orchestrator
+  • Enforces 15MB file cap, max 5 photos per proposal, total batch <= 35MB
+  • Dispatches contextual toast alerts (Invalid Format, Corrupted File, Quota Exceeded)
+              │
+              ▼ (On Approved Proposal)
+  Layer 4: Google Apps Script Backend Binary Guard (Code.js)
+  • Re-verifies unsigned byte headers (b < 0 ? b + 256 : b) against binary signatures
+  • Neutralizes directory traversal (../) and forces extension matching detected binary type
+  • Saves verified assets to Drive: Eye Of Ru Enterprises / Clients / [Client] / 02_Brand Assets & Media
+```
