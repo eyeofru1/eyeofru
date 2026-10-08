@@ -314,4 +314,8 @@ To safeguard Google Drive media repositories and prevent client browser compromi
    - **Unified Operator Ergonomics**: Allows the operator to monitor outbound campaigns, inbound leads, and client site staging proposals from a single, high-density screen without needing separate browser windows.
 2. **Master Multi-Client Staging Command Center**: A centralized agency view aggregating queues across multiple client websites into one unified triage pane.
 3. **Fluid "Approve & Apply" Antigravity Bridge**: Automatic translation of staged diffs into codebase edits, build testing (`npm run build`), and edge release without manual file manipulation.
-4. **Structured Admin & Client Identity Profiles**: Session onboarding layer persisting submitter name, email, and venture role to replace the default `authorized-client@` placeholder.
+4. **Client & Admin/Operator Intake Procedure & Identity Binding**:
+   - Establish a formalized intake procedure for onboarding both clients and agency administrators/operators.
+   - Resolve the dual admin/operator identity disconnect: currently, when an admin tests or proposes updates directly, the record logs a string like `"Jeremy (Eye Of Ru Admin)"` without an explicit notification email address bound to it.
+   - Design the intake flow so each persona (client contact vs. internal agency operator) is mapped with explicit notification channels (e.g., `agency@eyeofruenterprisesllc.com` or direct email), ensuring completion and deployment emails are automatically routed to the right inbox.
+   - Persist these verified profiles across sessions rather than relying on unlinked strings or generic fallback placeholders.

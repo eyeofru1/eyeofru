@@ -26,4 +26,7 @@ This is your personal checklist of features that have been built and are waiting
   - **Signal Nodes & Web Audio Chime**: Replicate the illuminated beacon indicators (`PENDING_REVIEW`, `REQUIRES_2STEP`, `DEPLOYED`) and the synthesized bronze harmonic chime (`880Hz / 1760Hz`) when new queue proposals arrive.
   - **Aggregated Queue View**: Centralized agency view aggregating staging proposals across all active client ventures.
   - **Fluid "Approve & Apply" Bridge**: Connect queue selection directly to Antigravity CLI to automatically mutate repository files and push live.
-  - **Admin & Client Identity Onboarding**: Formal session onboarding profile (replaces `authorized-client@` placeholder).
+  - **Client & Admin/Operator Intake Procedure & Identity Binding**:
+    - Build a formal intake and setup flow for clients and agency admins/operators.
+    - Tie operator and client identity together so notifications know who submitted the change, who approved it, and which verified email address to notify on deployment completion (resolves missing recipient email when an admin/operator submits under a non-email handle).
+    - Persist verified email/role associations in the ledger and local profile rather than placeholder values.

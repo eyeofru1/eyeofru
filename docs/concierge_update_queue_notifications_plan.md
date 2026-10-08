@@ -169,5 +169,7 @@ To pick up in future development sessions:
    - Filter by status (`Pending`, `Expedited 24H SLA`, `2-Step Call Required`, `Under Review`, `Deployed`).
 3. **Automated "Approve & Apply" Code Bridge**:
    - Build a fluid bridge where selecting `[Approve]` triggers Antigravity code generation to automatically mutate target files, run `npm run build`, and push to Cloudflare Pages without manual file editing.
-4. **Admin & Client Identity Onboarding Modal**:
-   - Replace default `authorized-client@` placeholder with a structured onboarding intake profile (Submitter Name, Contact Email, Venture Role) persisted in `localStorage`.
+4. **Client & Admin/Operator Intake Procedure & Identity Binding**:
+   - Formalize the intake process for both clients and internal agency admins/operators.
+   - Address the root cause of missing deployment notifications: when the admin acts as the submitter (e.g. labeled `"Jeremy (Eye Of Ru Admin)"`), there was no intake step that tied that handle to an explicit recipient email address in the backend.
+   - Map each entity during intake to an unambiguous notification route (e.g. `agency@eyeofruenterprisesllc.com`), ensuring completion receipts dispatch reliably across all workflows.
