@@ -120,23 +120,48 @@
       <!-- Chat History Stream -->
       <div id="chatHistory" class="flex-grow p-4 overflow-y-auto space-y-4 text-xs">
         
-        <div id="introCard" class="p-3.5 rounded-xl bg-charcoal-900 border border-charcoal-800 text-slate-300 leading-relaxed transition-all">
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-[10px] font-mono text-bronze-400 font-semibold">CONCIERGE AGENT</span>
+        <div id="introCard" class="p-4 rounded-xl bg-charcoal-900 border border-charcoal-800 text-slate-300 leading-relaxed transition-all space-y-2.5">
+          <div class="flex items-center justify-between pb-1.5 border-b border-charcoal-800/80">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span class="text-[10px] font-mono text-bronze-400 font-semibold uppercase tracking-wider">Concierge Operation Guide</span>
+            </div>
             <button onclick="toggleIntro()" class="text-slate-500 hover:text-slate-300 p-0.5 rounded transition" title="Hide Guide" aria-label="Hide Guide">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
           </div>
-          Welcome, partner. I am your studio AI Concierge. You can ask me to:
-          <ul class="list-disc pl-4 mt-2 space-y-1 text-slate-400">
-            <li>Update operating hours or contact parameters</li>
-            <li>Propose copy revisions to ventures or studio manifesto</li>
-            <li>Draft new technical dispatches for the research blog</li>
-            <li>Inspect live Core Web Vitals and edge latency metrics</li>
-          </ul>
-          <p class="mt-2 text-slate-400">All requested changes generate a visual diff preview in the staging pane on the right before anything touches production.</p>
+
+          <p class="text-[11px] text-slate-300">
+            Welcome, partner. Use this console to draft copy updates, visual styling enhancements, operating schedules, and venture initiatives with safe, air-gapped staging verification.
+          </p>
+
+          <div class="space-y-1.5 pt-1">
+            <span class="text-[10px] font-mono uppercase text-slate-400 font-semibold block">Prompting Best Practices & Context Tips:</span>
+            <ul class="space-y-1.5 text-[11px] text-slate-400 pl-1">
+              <li class="flex items-start gap-1.5">
+                <span class="text-bronze-400 font-mono">▸</span>
+                <span><strong>Starter Cues:</strong> Click <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ Adjust Template</code>, <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ Update Hours</code>, or <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ Draft Venture</code> to load an intent cue, then describe your changes naturally in plain English.</span>
+              </li>
+              <li class="flex items-start gap-1.5">
+                <span class="text-bronze-400 font-mono">▸</span>
+                <span><strong>Visual Styling & UI:</strong> You can request design and visual effects beyond simple text (e.g. <em>"increase size 25% with glowing background"</em>, <em>"prepend greeting before title"</em>, or <em>"add ambient glow to action buttons"</em>).</span>
+              </li>
+              <li class="flex items-start gap-1.5">
+                <span class="text-bronze-400 font-mono">▸</span>
+                <span><strong>Component Targeting:</strong> Mention the target component (e.g. Header, Hero, Ventures Catalog, Contact, Footer) so the agent automatically maps the current code baseline.</span>
+              </li>
+              <li class="flex items-start gap-1.5">
+                <span class="text-bronze-400 font-mono">▸</span>
+                <span><strong>Full-Screen Inspection:</strong> Click any staged diff card or <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">Inspect ↗</code> to open the full-screen modal with smooth vertical scrolling.</span>
+              </li>
+              <li class="flex items-start gap-1.5">
+                <span class="text-bronze-400 font-mono">▸</span>
+                <span><strong>Safe Staging:</strong> Nothing touches production directly. Approving a proposal queues it to the Agency Google Sheet ledger for Antigravity verification.</span>
+              </li>
+            </ul>
+          </div>
         </div>
 
       </div>
