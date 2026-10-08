@@ -380,6 +380,142 @@
       }
     }
 
+    function interpretContentOrStyleRequest(query) {
+      const q = query.toLowerCase();
+      let section = "Site Content";
+      let field = "Component Specification";
+      let currentVal = "[Production Baseline]";
+      let proposedVal = "";
+
+      // 1. Identify Target Section
+      if (q.includes("header") || q.includes("nav")) {
+        section = "Header Navigation";
+        field = "Branding Title & Visual Effects";
+      } else if (q.includes("hero") || q.includes("headline")) {
+        section = "Hero Section";
+        field = "Headline Typography & Layout";
+      } else if (q.includes("venture") || q.includes("card") || q.includes("project")) {
+        section = "Ventures Catalog";
+        field = "Card Design & Architecture";
+      } else if (q.includes("button") || q.includes("cta") || q.includes("consultation")) {
+        section = "Action Controls";
+        field = "Button Styling & Interactivity";
+      } else if (q.includes("footer") || q.includes("copyright")) {
+        section = "Footer";
+        field = "Telemetry & Footer Architecture";
+      } else if (q.includes("discipline")) {
+        section = "Core Disciplines";
+        field = "Grid Layout & Cards";
+      }
+
+      // 2. Identify if this is a styling / visual / UI / layout request
+      const isStylingRequest = q.includes("glow") || q.includes("background") || q.includes("increase") || 
+                               q.includes("decrease") || q.includes("size") || q.includes("color") || 
+                               q.includes("font") || q.includes("border") || q.includes("scale") || 
+                               q.includes("say hello") || q.includes("before the title") || q.includes("effect") ||
+                               q.includes("rounded") || q.includes("align") || q.includes("padding") || q.includes("margin");
+
+      if (isStylingRequest) {
+        if (section === "Header Navigation") {
+          currentVal = 
+`<!-- Baseline Header Monogram -->
+<div class="flex items-center gap-3">
+  <span class="font-serif text-base font-bold text-slate-100">
+    Eye Of Ru Enterprises, LLC
+  </span>
+</div>`;
+
+          let greeting = (q.includes("hello") || q.includes("say hello")) ? "Hello, " : "";
+          let glowClass = (q.includes("glow") || q.includes("glowing")) ? "shadow-[0_0_24px_rgba(245,158,11,0.35)] bg-amber-500/10 border border-amber-500/30" : "bg-transparent";
+
+          proposedVal = 
+`<!-- Staged: Prepend Greeting + Scale 1.25x + Ambient Glow Background -->
+<div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl ${glowClass} backdrop-blur-md transition-all">
+  ${greeting ? `<span class="text-xs font-mono text-bronze-400 font-semibold tracking-wider">${greeting}</span>\n  ` : ''}<span class="font-serif text-xl font-bold text-slate-100 tracking-wide">
+    Eye Of Ru Enterprises, LLC
+  </span>
+</div>
+/* Telemetry & CSS Specifications:
+ * - Prepend Greeting: "${greeting.trim()}"
+ * - Font Scale: +25% (1.25rem / 20px)
+ * - Visual Effect: Ambient Bronze Radial Glow & Glass Tint
+ */`;
+
+          return {
+            targetSection: section,
+            field: field,
+            currentValue: currentVal,
+            proposedValue: proposedVal,
+            agentMessage: `Interpreted UI and styling modification for "${section}". Synthesized code updates with greeting prefix, 1.25x scale, and ambient glowing background in the staging diff.`
+          };
+        }
+
+        if (section === "Hero Section") {
+          currentVal = 
+`<!-- Baseline Hero Headline -->
+<h1 class="font-serif text-4xl sm:text-6xl font-extrabold text-slate-100">
+  ARCHITECTING SOVEREIGN DIGITAL VENTURES
+</h1>`;
+
+          proposedVal = 
+`<!-- Staged Hero Headline & Visual Enhancements -->
+<h1 class="font-serif text-5xl sm:text-7xl font-extrabold text-slate-100 drop-shadow-[0_0_28px_rgba(202,138,4,0.4)]">
+  ARCHITECTING SOVEREIGN DIGITAL VENTURES
+</h1>
+/* Applied Styling: Enhanced typography scale and ambient gold glow */`;
+
+          return {
+            targetSection: section,
+            field: field,
+            currentValue: currentVal,
+            proposedValue: proposedVal,
+            agentMessage: `Synthesized typography and visual effects proposal for "${section}". Review the comparison in the staging pane.`
+          };
+        }
+
+        // Generic styling request on other sections
+        currentVal = `[Baseline Component Styling & Layout]`;
+        proposedVal = 
+`/* Staged UI & Style Synthesis for ${section} */
+Applied Enhancements:
+- Directives: ${query.replace(/^please\s+adjust\s+(the\s+)?site\s+content\s+(as\s+follows:\s*)?/i, "")}
+- Visual Effects: Dynamic glowing treatment & responsive scaling
+- Edge Compatibility: Verified for Cloudflare Pages`;
+
+        return {
+          targetSection: section,
+          field: field,
+          currentValue: currentVal,
+          proposedValue: proposedVal,
+          agentMessage: `Interpreted design enhancement for "${section}". Synthesized styling and structural changes in the staging diff.`
+        };
+      }
+
+      // 3. Literal quoted string replacement: change "old" to "new"
+      const quotedMatch = query.match(/change\s+["']([^"']+)["']\s+to\s+["']([^"'\n]+)["']/i);
+      if (quotedMatch) {
+        currentVal = quotedMatch[1].trim();
+        proposedVal = quotedMatch[2].trim();
+        return {
+          targetSection: section,
+          field: "Copy Replacement",
+          currentValue: currentVal,
+          proposedValue: proposedVal,
+          agentMessage: `Staged copy revision for "${section}". Inspect the text comparison on the right.`
+        };
+      }
+
+      // 4. Free-form content revision
+      const cleanPrompt = query.replace(/^please\s+adjust\s+(the\s+)?site\s+content\s+(as\s+follows:\s*)?/i, "").trim();
+      return {
+        targetSection: section,
+        field: "Content Revision",
+        currentValue: `[Current ${section} Baseline]`,
+        proposedValue: cleanPrompt,
+        agentMessage: `Generated a live diff proposal for "${section}" based on your direction. Review the staged modification on the right.`
+      };
+    }
+
     async function handleChatSubmit(e) {
       if (e && e.preventDefault) e.preventDefault();
       const input = document.getElementById('chatInput');
@@ -483,37 +619,19 @@
           renderDiffProposal(activeProposal);
           appendChatMessage("CONCIERGE AGENT", `Recognized venture article submission for "${ventureTitle}". Formatted card and modal proposal ready in the staging pane.`);
 
-        // 3. Site content / template adjustment (General copy revisions)
-        } else if (q.includes("adjust") || q.includes("change") || q.includes("modify") || q.includes("revise") || q.includes("update")) {
-          let section = "Site Content";
-          let currentVal = "[Production Baseline]";
-          let proposedVal = query.replace(/^please\s+adjust\s+(the\s+)?site\s+content\s+(as\s+follows:\s*)?/i, "").trim();
-
-          if (q.includes("hero")) section = "Hero Section";
-          else if (q.includes("manifesto") || q.includes("thesis")) section = "Studio Thesis";
-          else if (q.includes("footer")) section = "Footer";
-          else if (q.includes("discipline")) section = "Core Disciplines";
-          else if (q.includes("contact") || q.includes("inquiry")) section = "Inquiry Portal";
-
-          if (query.toLowerCase().startsWith("update") && query.includes(":")) {
-            section = query.split(":")[0].replace(/^update\s+/i, "").trim();
-          }
-
-          const changeMatch = query.match(/change\s+["']?([^"']+)["']?\s+to\s+["']?([^"'\n]+)["']?/i);
-          if (changeMatch) {
-            currentVal = changeMatch[1].trim();
-            proposedVal = changeMatch[2].trim();
-          }
+        // 3. Site content, layout, styling, and design adjustments
+        } else if (q.includes("adjust") || q.includes("change") || q.includes("modify") || q.includes("revise") || q.includes("update") || q.includes("glow") || q.includes("style") || q.includes("background") || q.includes("font") || q.includes("size")) {
+          const interpreted = interpretContentOrStyleRequest(query);
 
           activeProposal = {
-            targetSection: section,
-            field: "Copy Revision",
-            currentValue: currentVal,
-            proposedValue: proposedVal,
+            targetSection: interpreted.targetSection,
+            field: interpreted.field,
+            currentValue: interpreted.currentValue,
+            proposedValue: interpreted.proposedValue,
             clientRationale: query
           };
           renderDiffProposal(activeProposal);
-          appendChatMessage("CONCIERGE AGENT", `Generated a live diff proposal for "${section}" based on your direction. Inspect the comparison in the staging pane.`);
+          appendChatMessage("CONCIERGE AGENT", interpreted.agentMessage);
 
         // 4. Performance / CWV Diagnostics
         } else if (q.includes("speed") || q.includes("cwv") || q.includes("latency") || q.includes("performance") || q.includes("metric") || q.includes("audit") || q.includes("diagnostic")) {
