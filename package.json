@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite --port 8081 --host",
     "build": "vite build",
-    "preview": "vite preview --port 8081"
+    "preview": "vite preview --port 8081",
+    "clasp:login": "cd gas-drive-ingestion && npx -y @google/clasp login",
+    "clasp:push": "cd gas-drive-ingestion && npx -y @google/clasp push"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
