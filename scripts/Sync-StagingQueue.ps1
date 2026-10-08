@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [string]$ClientName = "Eye Of Ru Enterprises",
-    [string]$WebhookUrl = "https://script.google.com/macros/s/AKfycbwvInc8tbMosqj2AHjGx-gfCWSkQ9j36AKwsFNVSg9JLxOwzotAnaLqZn2cj94rYxrcUA/exec",
+    [string]$WebhookUrl = "https://script.google.com/macros/s/AKfycbwu1fGsevglqSx7fdStlPsNWvqSu9JBpIqBliwlPnDxdEOCKBkfWRHgzj1e3WDXAaWn/exec",
     [switch]$CleanArchive
 )
 

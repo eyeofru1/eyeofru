@@ -901,7 +901,7 @@ function sendStagingAlertEmail(clientName, targetSection, field, currentValue, p
       "</div>" +
     "</div>";
 
-  var recipients = "agency@eyeofruenterprisesllc.com, eyeofru1@gmail.com";
+  var recipients = "agency@eyeofruenterprisesllc.com, jeremy@eyeofruenterprisesllc.com, eyeofru1@gmail.com";
   return sendAgencyEmail(recipients, submittedBy, subject, html);
 }
 
