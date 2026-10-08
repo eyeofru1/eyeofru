@@ -159,10 +159,15 @@ A native PowerShell operator script located at `scripts/Sync-StagingQueue.ps1`:
 
 To pick up in future development sessions:
 
-1. **Master Multi-Queue Aggregator View**:
-   - Create a centralized agency dashboard that aggregates pending staging proposals across *all* active client ventures in a single unified view.
-   - Live status filters: `Pending Review`, `Expedited (24H SLA)`, `Requires 2-Step Call`, `Deployed`, `Rejected`.
-2. **Automated "Approve & Apply" Code Bridge**:
+1. **Integration into Existing Dashboard Project (Lead Command Center / Port 3300)**:
+   - Add a dedicated **"Staging Queues"** tabbed viewport directly into the existing operator dashboard project.
+   - **Signal Color Nodes**: Implement the exact same illuminated beacon indicator nodes (amber beacon for `PENDING_REVIEW`, rose beacon for `REQUIRES_2STEP` phone verification, emerald pulse for `DEPLOYED`).
+   - **Audio Chime Parity**: Integrate the Web Audio synthesized bronze harmonic chord (`880Hz / 1760Hz` dual-sine chime) when new queued proposals or expedited items arrive while the dashboard tab is active.
+   - **Unified Operator Ergonomics**: Allows the operator to monitor outbound campaigns, inbound leads, and client site staging proposals from a single, high-density screen without needing separate browser windows.
+2. **Master Multi-Queue Aggregator View**:
+   - Aggregate pending proposals across all active client ventures (`clientName=*` or multi-sheet scanner) in a unified queue feed.
+   - Filter by status (`Pending`, `Expedited 24H SLA`, `2-Step Call Required`, `Under Review`, `Deployed`).
+3. **Automated "Approve & Apply" Code Bridge**:
    - Build a fluid bridge where selecting `[Approve]` triggers Antigravity code generation to automatically mutate target files, run `npm run build`, and push to Cloudflare Pages without manual file editing.
-3. **Admin & Client Identity Onboarding Modal**:
+4. **Admin & Client Identity Onboarding Modal**:
    - Replace default `authorized-client@` placeholder with a structured onboarding intake profile (Submitter Name, Contact Email, Venture Role) persisted in `localStorage`.

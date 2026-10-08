@@ -22,6 +22,8 @@ This is your personal checklist of features that have been built and are waiting
 - [x] **Modal Backdrop Click-to-Close UX**: Modal dialogs close on backdrop click in `index.html`.
 - [x] **Sensitivity Regex Tuning**: Specific operational phrases tuned to eliminate false 2-step call flags.
 - [ ] **Master Multi-Client Staging Queue Dashboard (Future Roadmap)**:
-  - Centralized agency view aggregating staging proposals across all active client ventures.
-  - Fluid "Approve & Apply" bridge to automatically mutate repository files and push live via Antigravity CLI.
-  - Formal Admin & Client Identity onboarding profile (replaces `authorized-client@` placeholder).
+  - **Existing Dashboard Integration (Lead Command Center / Port 3300)**: Add a dedicated "Staging Queues" tabbed viewport directly into the existing operator dashboard.
+  - **Signal Nodes & Web Audio Chime**: Replicate the illuminated beacon indicators (`PENDING_REVIEW`, `REQUIRES_2STEP`, `DEPLOYED`) and the synthesized bronze harmonic chime (`880Hz / 1760Hz`) when new queue proposals arrive.
+  - **Aggregated Queue View**: Centralized agency view aggregating staging proposals across all active client ventures.
+  - **Fluid "Approve & Apply" Bridge**: Connect queue selection directly to Antigravity CLI to automatically mutate repository files and push live.
+  - **Admin & Client Identity Onboarding**: Formal session onboarding profile (replaces `authorized-client@` placeholder).

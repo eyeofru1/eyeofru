@@ -307,6 +307,11 @@ To safeguard Google Drive media repositories and prevent client browser compromi
 * **Live Reflection**: Dashboard dynamic polling loads live stages (`PENDING_REVIEW`, `EXPEDITED`, `REQUIRES_2STEP`, `DEPLOYED`, `REJECTED`) from the master spreadsheet.
 
 ### Future Roadmap (To Pick Up Next):
-1. **Master Multi-Client Staging Command Center**: A centralized agency view aggregating queues across multiple client websites into one unified triage pane.
-2. **Fluid "Approve & Apply" Antigravity Bridge**: Automatic translation of staged diffs into codebase edits, build testing (`npm run build`), and edge release without manual file manipulation.
-3. **Structured Admin & Client Identity Profiles**: Session onboarding layer persisting submitter name, email, and venture role to replace the default `authorized-client@` placeholder.
+1. **Integration into Existing Dashboard Project (Lead Command Center / Port 3300)**:
+   - Add a dedicated **"Staging Queues"** tabbed viewport directly into the existing operator dashboard project.
+   - **Signal Color Nodes**: Implement the illuminated beacon indicator nodes (amber beacon for `PENDING_REVIEW`, rose beacon for `REQUIRES_2STEP` phone verification, emerald pulse for `DEPLOYED`).
+   - **Audio Chime Parity**: Integrate the Web Audio synthesized bronze harmonic chord (`880Hz / 1760Hz` dual-sine chime) when new queued proposals or expedited items arrive while the dashboard tab is active.
+   - **Unified Operator Ergonomics**: Allows the operator to monitor outbound campaigns, inbound leads, and client site staging proposals from a single, high-density screen without needing separate browser windows.
+2. **Master Multi-Client Staging Command Center**: A centralized agency view aggregating queues across multiple client websites into one unified triage pane.
+3. **Fluid "Approve & Apply" Antigravity Bridge**: Automatic translation of staged diffs into codebase edits, build testing (`npm run build`), and edge release without manual file manipulation.
+4. **Structured Admin & Client Identity Profiles**: Session onboarding layer persisting submitter name, email, and venture role to replace the default `authorized-client@` placeholder.
