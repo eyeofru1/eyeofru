@@ -15,7 +15,7 @@ function doPost(e) {
 
     // Route 1: Test Email Verification
     if (action === "TEST_EMAIL") {
-      var toEmail = data.toEmail || Session.getActiveUser().getEmail();
+      var toEmail = data.toEmail || "agency@eyeofruenterprisesllc.com";
       var testSubject = "Eye Of Ru Test Transmission from agency@";
       var testHtml = "<div style='font-family:sans-serif;padding:20px;background:#0d0f12;color:#f8fafc;border-radius:8px;'>" +
         "<h2 style='color:#c89b4e;margin-top:0;'>Eye Of Ru Enterprises</h2>" +
@@ -25,13 +25,17 @@ function doPost(e) {
         "</div>";
 
       var emailResult = sendAgencyEmail(toEmail, toEmail, testSubject, testHtml);
+      var aliases = [];
+      try { aliases = GmailApp.getAliases(); } catch (aErr) {}
 
       return jsonResponse({
-        status: "SUCCESS",
+        status: emailResult.success ? "SUCCESS" : "ERROR",
         action: "TEST_EMAIL",
         sentTo: toEmail,
+        emailSent: emailResult.success,
+        emailResult: emailResult,
         senderUsed: emailResult.fromUsed,
-        availableAliases: GmailApp.getAliases()
+        availableAliases: aliases
       });
     }
 
@@ -734,12 +738,12 @@ function sendAgencyEmail(recipient, customerEmail, subject, htmlBody) {
         return { success: true, fromUsed: "MailApp" };
       } catch (mErr) {
         console.warn("Mail dispatch error:", mErr);
-        return { success: false, error: mErr.toString() };
+        return { success: false, error: mErr.toString(), gmailError: gErr.toString(), recipient: recipient };
       }
     }
   } catch (err) {
     console.warn("sendAgencyEmail general exception:", err);
-    return { success: false, error: err.toString() };
+    return { success: false, error: err.toString(), recipient: recipient };
   }
 }
 
@@ -897,7 +901,36 @@ function sendStagingAlertEmail(clientName, targetSection, field, currentValue, p
       "</div>" +
     "</div>";
 
-  return sendAgencyEmail("agency@eyeofruenterprisesllc.com", submittedBy, subject, html);
+  var recipients = "agency@eyeofruenterprisesllc.com, eyeofru1@gmail.com";
+  return sendAgencyEmail(recipients, submittedBy, subject, html);
+}
+
+/**
+ * Developer helper: Run this once in the Google Apps Script Web Editor (dropdown -> authorizeMailPermissions -> Run)
+ * to grant GmailApp & MailApp authorization for the web app deployment.
+ */
+function authorizeMailPermissions() {
+  var testEmail = Session.getActiveUser().getEmail() || "agency@eyeofruenterprisesllc.com";
+  Logger.log("Authorizing script permissions for: " + testEmail);
+  try {
+    var aliases = GmailApp.getAliases();
+    Logger.log("Detected Gmail Aliases: " + JSON.stringify(aliases));
+  } catch (err) {
+    Logger.log("GmailApp.getAliases notice: " + err);
+  }
+
+  var result = sendAgencyEmail(
+    testEmail,
+    testEmail,
+    "Eye Of Ru Enterprises — Webhook Email Permissions Verified",
+    "<div style='font-family:sans-serif;padding:20px;background:#0d0f12;color:#f8fafc;border-radius:8px;border:1px solid #c89b4e;'>" +
+      "<h2 style='color:#c89b4e;margin-top:0;'>Eye Of Ru Enterprises</h2>" +
+      "<p>Google Apps Script mail permissions (GmailApp + MailApp) are successfully verified and active for the deployed Web App.</p>" +
+      "<p>Timestamp: " + new Date().toString() + "</p>" +
+    "</div>"
+  );
+  Logger.log("Email Dispatch Result: " + JSON.stringify(result));
+  return result;
 }
 
 /**
