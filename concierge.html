@@ -1521,8 +1521,8 @@ Applied Enhancements:
     function checkSensitiveChange(proposal) {
       if (!proposal) return false;
       const combined = `${proposal.targetSection || ''} ${proposal.field || ''} ${proposal.proposedValue || ''} ${proposal.clientRationale || ''}`.toLowerCase();
-      const sensitiveRegex = /(\$|\bprice\b|\brate\b|\bcost\b|\bfee\b|\bretainer\b|\bhours\b|\bclosed\b|\bphone\b|\bemail\b|\bcontact\b|\baddress\b|\bdelete\b|\bremove\b|\blegal\b|\bterms\b)/i;
-      return sensitiveRegex.test(combined) || (proposal.proposedValue && proposal.proposedValue.length > 500);
+      const sensitiveRegex = /(\$|\bprice\b|\brate\b|\bcost\b|\bfee\b|\bretainer\b|\bhours\b|\bclosed indefinitely\b|\bpermanently closed\b|\btemporarily closed\b|\bphone\b|\bemail\b|\bcontact\b|\baddress\b|\bdelete\b|\bremove\b|\blegal terms\b|\bdisclaimer\b)/i;
+      return sensitiveRegex.test(combined) || (proposal.proposedValue && proposal.proposedValue.length > 750);
     }
 
     function renderStatusBadge(status) {

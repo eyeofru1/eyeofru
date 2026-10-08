@@ -1071,6 +1071,17 @@
       }
     });
 
+    ['ventureDetailModal', 'dispatchModal', 'privacyModal', 'termsModal', 'governanceModal'].forEach(modalId => {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeModal(modalId);
+          }
+        });
+      }
+    });
+
     function showConfirmationScreen() {
       const form = document.getElementById('inquiryForm');
       const confirmation = document.getElementById('inquiryConfirmation');
