@@ -146,10 +146,10 @@
         <button type="button" onclick="useQuickPrompt('Please adjust the site content as follows: ')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load content adjustment direction cue">
           + Adjust Template
         </button>
-        <button type="button" onclick="useQuickPrompt('Update Friday operating hours to close at 17:00 EST')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load operating hours prompt into prompt box">
+        <button type="button" onclick="useQuickPrompt('Please update operating hours as follows: ')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load operating hours direction cue">
           + Update Hours
         </button>
-        <button type="button" onclick="useQuickPrompt('Propose new venture: Decentralized Quantum Auditing - Enterprise cryptographic verification suite')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load draft venture prompt into prompt box">
+        <button type="button" onclick="useQuickPrompt('Please draft a new venture article/card as follows: ')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load draft venture direction cue">
           + Draft Venture
         </button>
       </div>
@@ -406,8 +406,85 @@
 
         const q = query.toLowerCase();
 
-        // 0. Site content / template adjustment direction cue or natural explanation
-        if (q.includes("adjust") || q.includes("change") || q.includes("modify") || q.includes("revise") || q.includes("update content")) {
+        // 1. Operating Hours / Schedule check (Recognizes intent immediately from direction cue or simple text like "change Friday hours to close at 5")
+        if (q.includes("operating hour") || q.includes("hours") || q.includes("schedule") || q.includes("close at") || q.includes("open at") || q.includes("closing") || q.includes("opening")) {
+          let day = "Weekly Operating Hours";
+          if (q.includes("friday")) day = "Friday Hours";
+          else if (q.includes("monday")) day = "Monday Hours";
+          else if (q.includes("tuesday")) day = "Tuesday Hours";
+          else if (q.includes("wednesday")) day = "Wednesday Hours";
+          else if (q.includes("thursday")) day = "Thursday Hours";
+          else if (q.includes("weekend") || q.includes("saturday") || q.includes("sunday")) day = "Weekend Hours";
+
+          let proposedHours = "09:00 - 17:00 EST";
+          if (q.includes("close at 5") || q.includes("close at 17") || q.includes("5pm") || q.includes("5 pm") || q.includes("5:00")) {
+            proposedHours = "09:00 - 17:00 EST";
+          } else if (q.includes("close at 4") || q.includes("close at 16") || q.includes("4pm") || q.includes("4 pm") || q.includes("4:00")) {
+            proposedHours = "09:00 - 16:00 EST";
+          } else if (q.includes("closed")) {
+            proposedHours = "Closed (By Executive Appointment Only)";
+          } else {
+            const times = query.match(/\b\d{1,2}(?::\d{2})?\s*(?:am|pm|est)?\b/gi);
+            if (times && times.length > 0) {
+              proposedHours = times.join(" - ") + (q.includes("est") ? "" : " EST");
+            }
+          }
+
+          activeProposal = {
+            targetSection: "Operating Schedule",
+            field: day,
+            currentValue: "09:00 - 18:00 EST",
+            proposedValue: proposedHours,
+            clientRationale: query
+          };
+          renderDiffProposal(activeProposal);
+          appendChatMessage("CONCIERGE AGENT", `Understood. I have drafted an Operating Schedule proposal for ${day} (${proposedHours}). Review the comparison in the staging pane.`);
+
+        // 2. Draft Venture / Article Card check (Recognizes intent immediately that an article/card is being submitted)
+        } else if (q.includes("draft a new venture") || q.includes("draft venture") || q.includes("venture") || q.includes("article") || q.includes("submitting an article") || q.includes("portfolio")) {
+          let userText = query.replace(/^please\s+draft\s+a\s+new\s+venture\s+(article\/card\s+)?(as\s+follows:\s*)?/i, "")
+                              .replace(/^draft\s+new\s+venture:\s*/i, "")
+                              .replace(/^propose\s+new\s+venture:\s*/i, "")
+                              .trim();
+
+          let ventureTitle = "Autonomous Edge Architecture";
+          let ventureSummary = userText || "Proprietary distributed venture initiative.";
+          let ventureCategory = "Enterprise Software & Systems";
+
+          if (userText.includes(":") || userText.includes(" - ")) {
+            const separator = userText.includes(" - ") ? " - " : ":";
+            const parts = userText.split(separator);
+            ventureTitle = parts[0].trim();
+            ventureSummary = parts.slice(1).join(separator).trim();
+          } else if (userText.length > 0) {
+            const words = userText.split(" ");
+            if (words.length > 4) {
+              ventureTitle = words.slice(0, 4).join(" ");
+              ventureSummary = userText;
+            } else {
+              ventureTitle = userText;
+              ventureSummary = `Initiative for ${userText}.`;
+            }
+          }
+
+          if (q.includes("ai") || q.includes("agent") || q.includes("autonomous")) {
+            ventureCategory = "Autonomous Systems & Workflow AI";
+          } else if (q.includes("map") || q.includes("geo") || q.includes("spatial")) {
+            ventureCategory = "Geospatial Modeling & Search";
+          }
+
+          activeProposal = {
+            targetSection: "Ventures Catalog",
+            field: ventureTitle,
+            currentValue: "[Field Not Present]",
+            proposedValue: `Title: ${ventureTitle}\nCategory: ${ventureCategory}\nStatus: In Incubation\nSummary: ${ventureSummary}\nDetailed Description: Technical specifications withheld during closed R&D incubation.`,
+            clientRationale: query
+          };
+          renderDiffProposal(activeProposal);
+          appendChatMessage("CONCIERGE AGENT", `Recognized venture article submission for "${ventureTitle}". Formatted card and modal proposal ready in the staging pane.`);
+
+        // 3. Site content / template adjustment (General copy revisions)
+        } else if (q.includes("adjust") || q.includes("change") || q.includes("modify") || q.includes("revise") || q.includes("update")) {
           let section = "Site Content";
           let currentVal = "[Production Baseline]";
           let proposedVal = query.replace(/^please\s+adjust\s+(the\s+)?site\s+content\s+(as\s+follows:\s*)?/i, "").trim();
@@ -418,12 +495,10 @@
           else if (q.includes("discipline")) section = "Core Disciplines";
           else if (q.includes("contact") || q.includes("inquiry")) section = "Inquiry Portal";
 
-          // If formatted like "Update Hero: Change ... to ..."
           if (query.toLowerCase().startsWith("update") && query.includes(":")) {
             section = query.split(":")[0].replace(/^update\s+/i, "").trim();
           }
 
-          // If the prompt includes "change X to Y"
           const changeMatch = query.match(/change\s+["']?([^"']+)["']?\s+to\s+["']?([^"'\n]+)["']?/i);
           if (changeMatch) {
             currentVal = changeMatch[1].trim();
@@ -440,56 +515,11 @@
           renderDiffProposal(activeProposal);
           appendChatMessage("CONCIERGE AGENT", `Generated a live diff proposal for "${section}" based on your direction. Inspect the comparison in the staging pane.`);
 
-        // 1. Venture/Portfolio check (takes precedence so 'quantum auditing' does not collide with CWV audit)
-        } else if (q.includes("venture") || q.includes("project") || q.includes("portfolio") || q.includes("quantum")) {
-          let ventureTitle = "Decentralized Quantum Auditing";
-          let ventureSummary = "Enterprise formal verification suite for quantum-resistant cryptographic contracts.";
-
-          if (query.includes(":")) {
-            const parts = query.split(":");
-            if (parts[1]) {
-              const subparts = parts[1].split("-");
-              ventureTitle = subparts[0].trim();
-              if (subparts[1]) ventureSummary = subparts.slice(1).join("-").trim();
-            }
-          } else {
-            const cleaned = query.replace(/^propose\s+(new\s+)?(venture\s+)?(card\s+)?(for\s+)?/i, "").trim();
-            if (cleaned) {
-              ventureTitle = cleaned.length > 40 ? cleaned.substring(0, 40) + "..." : cleaned;
-              ventureSummary = `Proposed venture initialization: ${cleaned}`;
-            }
-          }
-
-          activeProposal = {
-            targetSection: "Ventures Catalog",
-            field: ventureTitle,
-            currentValue: "[Field Not Present]",
-            proposedValue: `Title: ${ventureTitle}\nStatus: In Incubation\nSummary: ${ventureSummary}`,
-            clientRationale: query
-          };
-          renderDiffProposal(activeProposal);
-          appendChatMessage("CONCIERGE AGENT", `Drafted venture addition proposal for "${ventureTitle}". Inspect the live diff on the right and push to the staging queue when ready.`);
-
-        // 2. Schedule / Operating Hours
-        } else if (q.includes("hour") || q.includes("schedule") || q.includes("open") || q.includes("close") || q.includes("time")) {
-          const times = query.match(/\b\d{1,2}:\d{2}\b/g);
-          const proposedHours = times && times.length > 0 ? times.join(" - ") + (q.includes("est") ? " EST" : "") : "09:00 - 17:00 EST";
-
-          activeProposal = {
-            targetSection: "Operating Schedule",
-            field: query.includes("friday") ? "Friday Hours" : "Weekly Operating Hours",
-            currentValue: "09:00 - 18:00 EST",
-            proposedValue: proposedHours,
-            clientRationale: query
-          };
-          renderDiffProposal(activeProposal);
-          appendChatMessage("CONCIERGE AGENT", `Generated a live diff proposal for the Operating Schedule (${proposedHours}). Review the comparison in the staging pane.`);
-
-        // 3. Performance / CWV Diagnostics
-        } else if (q.includes("speed") || q.includes("cwv") || q.includes("latency") || q.includes("performance") || q.includes("metric") || q.includes("audit")) {
+        // 4. Performance / CWV Diagnostics
+        } else if (q.includes("speed") || q.includes("cwv") || q.includes("latency") || q.includes("performance") || q.includes("metric") || q.includes("audit") || q.includes("diagnostic")) {
           appendChatMessage("CONCIERGE AGENT", "DOM Diagnostic Scan Complete: Desktop PSI: 99/100, Mobile PSI: 98/100. First Contentful Paint: 0.8s, Cumulative Layout Shift: 0.00. Edge global latency: 8.4ms across Cloudflare Atlanta & Miami edge nodes.");
 
-        // 4. General fallback proposal with user rationale
+        // 5. General fallback proposal with user rationale
         } else {
           activeProposal = {
             targetSection: "Content & Copy",
