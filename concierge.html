@@ -104,7 +104,7 @@
   <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
     
     <!-- LEFT PANE: CONVERSATIONAL ASSISTANT -->
-    <div class="lg:col-span-6 flex flex-col h-[500px] lg:h-[calc(100vh-10rem)] min-h-[500px] rounded-2xl bg-charcoal-850/80 border border-charcoal-800 overflow-hidden shadow-xl">
+    <div class="lg:col-span-6 flex flex-col h-[430px] lg:h-[calc(100vh-11rem)] min-h-[400px] rounded-2xl bg-charcoal-850/80 border border-charcoal-800 overflow-hidden shadow-xl">
       
       <!-- Console Header -->
       <div class="py-3 px-4 border-b border-charcoal-800 bg-charcoal-900/60 flex items-center justify-between">
@@ -141,24 +141,32 @@
 
       </div>
 
-      <!-- Suggested Quick Prompts -->
-      <div class="px-4 py-2 bg-charcoal-900/40 border-t border-charcoal-800/80 flex items-center gap-2 overflow-x-auto text-[10px] font-mono text-slate-400">
-        <span class="text-slate-500 flex-shrink-0">Quick:</span>
-        <button onclick="useQuickPrompt('Audit Core Web Vitals and edge latency metrics')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 flex-shrink-0 transition">
-          Audit CWV Speed
+      <!-- Suggested Starter Prompts -->
+      <div class="px-3.5 py-2 bg-charcoal-900/50 border-t border-charcoal-800/80 flex items-center gap-2 overflow-x-auto text-[10px] font-mono text-slate-400">
+        <span class="text-slate-500 flex-shrink-0">Starter Prompts:</span>
+        <button type="button" onclick="useQuickPrompt('Audit Core Web Vitals and edge latency metrics')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load CWV speed prompt into prompt box">
+          + CWV Speed
         </button>
-        <button onclick="useQuickPrompt('Update Friday operating hours to close at 17:00')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 flex-shrink-0 transition">
-          Update Hours
+        <button type="button" onclick="useQuickPrompt('Update Friday operating hours to close at 17:00 EST')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load operating hours prompt into prompt box">
+          + Update Hours
         </button>
-        <button onclick="useQuickPrompt('Propose new venture card for decentralized quantum auditing')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 flex-shrink-0 transition">
-          Draft Venture
+        <button type="button" onclick="useQuickPrompt('Propose new venture: Decentralized Quantum Auditing - Enterprise cryptographic verification suite')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load draft venture prompt into prompt box">
+          + Draft Venture
         </button>
       </div>
 
       <!-- Chat Input Form -->
-      <form onsubmit="handleChatSubmit(event)" class="p-3 bg-charcoal-900 border-t border-charcoal-800 flex items-center gap-2">
-        <input type="text" id="chatInput" placeholder="Propose an update or request diagnostics..." class="flex-grow px-3.5 py-2.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-bronze-500 text-xs">
-        <button type="submit" id="sendBtn" class="px-4 py-2.5 rounded-lg bg-bronze-500 hover:bg-bronze-400 text-charcoal-950 font-mono font-bold text-xs uppercase transition">
+      <form onsubmit="handleChatSubmit(event)" class="p-3 bg-charcoal-900 border-t border-charcoal-800 flex items-end gap-2.5">
+        <div class="relative flex-grow">
+          <textarea 
+            id="chatInput" 
+            rows="2"
+            oninput="autoResizePrompt(this)"
+            onkeydown="handlePromptKeydown(event)"
+            placeholder="Propose an update or request diagnostics... (Enter to send, Shift+Enter for new line)" 
+            class="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-950 border border-charcoal-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-bronze-500 text-xs resize-none min-h-[58px] max-h-36 overflow-y-auto leading-relaxed transition-all"></textarea>
+        </div>
+        <button type="submit" id="sendBtn" class="px-4 h-[58px] rounded-xl bg-bronze-500 hover:bg-bronze-400 text-charcoal-950 font-mono font-bold text-xs uppercase transition flex items-center justify-center flex-shrink-0 shadow-md">
           Send
         </button>
       </form>
@@ -296,20 +304,46 @@
     }
 
     function useQuickPrompt(text) {
-      document.getElementById('chatInput').value = text;
-      handleChatSubmit(new Event('submit'));
+      const input = document.getElementById('chatInput');
+      if (!input) return;
+      input.value = text;
+      autoResizePrompt(input);
+      input.focus();
+      if (input.setSelectionRange) {
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+      showToast("Starter prompt loaded. Adjust details and press Send.", "info");
+    }
+
+    function autoResizePrompt(el) {
+      if (!el) return;
+      el.style.height = 'auto';
+      const newHeight = Math.min(Math.max(el.scrollHeight, 58), 150);
+      el.style.height = newHeight + 'px';
+    }
+
+    function handlePromptKeydown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const form = e.target.closest('form');
+        if (form) {
+          form.requestSubmit ? form.requestSubmit() : handleChatSubmit(e);
+        }
+      }
     }
 
     async function handleChatSubmit(e) {
-      e.preventDefault();
+      if (e && e.preventDefault) e.preventDefault();
       const input = document.getElementById('chatInput');
+      if (!input) return;
       const query = input.value.trim();
       if (!query) return;
 
       appendChatMessage("USER", query);
       input.value = "";
+      input.style.height = '58px';
 
-      // Simulate or call assistant
+      // Simulate assistant typing state
       const thinkingId = appendChatMessage("CONCIERGE AGENT", `
         <div class="flex items-center gap-1.5 h-4 my-1">
           <span class="w-1.5 h-1.5 bg-emerald-500/60 rounded-full animate-bounce"></span>
@@ -322,30 +356,70 @@
         const thinkingEl = document.getElementById(thinkingId);
         if (thinkingEl) thinkingEl.remove();
 
-        if (query.toLowerCase().includes("speed") || query.toLowerCase().includes("cwv") || query.toLowerCase().includes("audit")) {
-          appendChatMessage("CONCIERGE AGENT", "DOM Diagnostic Scan Complete: Desktop PSI: 99/100, Mobile PSI: 98/100. First Contentful Paint: 0.8s, Cumulative Layout Shift: 0.00. Edge global latency: 8.4ms across Cloudflare Atlanta & Miami edge nodes.");
-        } else if (query.toLowerCase().includes("hour")) {
-          activeProposal = {
-            targetSection: "Operating Schedule",
-            field: "Friday Hours",
-            currentValue: "09:00 - 18:00 EST",
-            proposedValue: "09:00 - 17:00 EST",
-            clientRationale: "Requested early Friday studio shutdown"
-          };
-          renderDiffProposal(activeProposal);
-          appendChatMessage("CONCIERGE AGENT", "I have generated a live diff proposal for the Operating Schedule. Review the side-by-side comparison in the right pane.");
-        } else {
+        const q = query.toLowerCase();
+
+        // 1. Venture/Portfolio check (takes precedence so 'quantum auditing' does not collide with CWV audit)
+        if (q.includes("venture") || q.includes("project") || q.includes("portfolio") || q.includes("quantum")) {
+          let ventureTitle = "Decentralized Quantum Auditing";
+          let ventureSummary = "Enterprise formal verification suite for quantum-resistant cryptographic contracts.";
+
+          if (query.includes(":")) {
+            const parts = query.split(":");
+            if (parts[1]) {
+              const subparts = parts[1].split("-");
+              ventureTitle = subparts[0].trim();
+              if (subparts[1]) ventureSummary = subparts.slice(1).join("-").trim();
+            }
+          } else {
+            const cleaned = query.replace(/^propose\s+(new\s+)?(venture\s+)?(card\s+)?(for\s+)?/i, "").trim();
+            if (cleaned) {
+              ventureTitle = cleaned.length > 40 ? cleaned.substring(0, 40) + "..." : cleaned;
+              ventureSummary = `Proposed venture initialization: ${cleaned}`;
+            }
+          }
+
           activeProposal = {
             targetSection: "Ventures Catalog",
-            field: "Quantum Ledger Auditing",
+            field: ventureTitle,
             currentValue: "[Field Not Present]",
-            proposedValue: "Title: Quantum Ledger Auditing\nStatus: In Incubation\nSummary: Formal mathematical verification suite for quantum-resistant cryptographic contracts.",
+            proposedValue: `Title: ${ventureTitle}\nStatus: In Incubation\nSummary: ${ventureSummary}`,
             clientRationale: query
           };
           renderDiffProposal(activeProposal);
-          appendChatMessage("CONCIERGE AGENT", "Drafted venture addition proposal per your prompt. Inspect the diff and push to the staging queue when satisfied.");
+          appendChatMessage("CONCIERGE AGENT", `Drafted venture addition proposal for "${ventureTitle}". Inspect the live diff on the right and push to the staging queue when ready.`);
+
+        // 2. Schedule / Operating Hours
+        } else if (q.includes("hour") || q.includes("schedule") || q.includes("open") || q.includes("close") || q.includes("time")) {
+          const times = query.match(/\b\d{1,2}:\d{2}\b/g);
+          const proposedHours = times && times.length > 0 ? times.join(" - ") + (q.includes("est") ? " EST" : "") : "09:00 - 17:00 EST";
+
+          activeProposal = {
+            targetSection: "Operating Schedule",
+            field: query.includes("friday") ? "Friday Hours" : "Weekly Operating Hours",
+            currentValue: "09:00 - 18:00 EST",
+            proposedValue: proposedHours,
+            clientRationale: query
+          };
+          renderDiffProposal(activeProposal);
+          appendChatMessage("CONCIERGE AGENT", `Generated a live diff proposal for the Operating Schedule (${proposedHours}). Review the comparison in the staging pane.`);
+
+        // 3. Performance / CWV Diagnostics
+        } else if (q.includes("speed") || q.includes("cwv") || q.includes("latency") || q.includes("performance") || q.includes("metric") || q.includes("audit")) {
+          appendChatMessage("CONCIERGE AGENT", "DOM Diagnostic Scan Complete: Desktop PSI: 99/100, Mobile PSI: 98/100. First Contentful Paint: 0.8s, Cumulative Layout Shift: 0.00. Edge global latency: 8.4ms across Cloudflare Atlanta & Miami edge nodes.");
+
+        // 4. General fallback proposal with user rationale
+        } else {
+          activeProposal = {
+            targetSection: "Content & Copy",
+            field: "General Site Update",
+            currentValue: "[Production Baseline]",
+            proposedValue: query,
+            clientRationale: "Requested modification via AI Concierge"
+          };
+          renderDiffProposal(activeProposal);
+          appendChatMessage("CONCIERGE AGENT", "Drafted staging diff proposal reflecting your request. Inspect the side-by-side comparison on the right.");
         }
-      }, 800);
+      }, 700);
     }
 
     function appendChatMessage(sender, text) {
