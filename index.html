@@ -658,7 +658,6 @@
           </p>
 
           <div class="text-xs font-mono text-slate-400 space-y-1.5 pt-2">
-            <div><strong class="text-slate-300">Jurisdiction:</strong> State of Florida, USA</div>
             <div><strong class="text-slate-300">Regional Focus:</strong> Central Florida · Orlando Hub</div>
             <div><strong class="text-slate-300">Secure Transmission:</strong> <a href="#" id="emailSlot" data-u="contact" data-d="eyeofruenterprisesllc.com" onclick="handleSecureMail(this, event)" class="text-bronze-400 hover:underline">contact [at] eyeofruenterprisesllc.com</a></div>
             <div><strong class="text-slate-300">Client Consultations:</strong> By Executive Appointment Only</div>
@@ -737,11 +736,6 @@
       <div class="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed font-light mb-6">
         <p id="modalVentureSummary" class="text-slate-200 font-medium"></p>
         <p id="modalVentureDetails"></p>
-      </div>
-
-      <div class="p-4 rounded-xl bg-charcoal-950 border border-charcoal-800 mb-6">
-        <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest block mb-2">Architectural Stack</span>
-        <div id="modalVentureStack" class="flex flex-wrap gap-1.5"></div>
       </div>
 
       <div id="modalVentureLinkContainer" class="flex items-center justify-between"></div>
@@ -900,10 +894,6 @@
           badgeStyle = "bg-charcoal-800 text-bronze-400 border-bronze-500/40";
         }
 
-        const stackMarkup = (v.stack && v.stack.length > 0)
-          ? v.stack.slice(0, 3).map(s => `<span class="px-2 py-0.5 rounded bg-charcoal-900 border border-charcoal-800 text-[10px] text-slate-400 font-mono">${s}</span>`).join('')
-          : `<span class="px-2 py-0.5 rounded bg-charcoal-900/60 border border-charcoal-800/80 text-[10px] text-slate-500 font-mono italic">Proprietary</span>`;
-
         return `
           <div class="group p-8 rounded-2xl bg-charcoal-850/80 border border-charcoal-800 hover:border-bronze-500/50 bronze-border-glow transition duration-300 flex flex-col justify-between cursor-pointer" onclick="openVentureModal('${v.id}')">
             <div>
@@ -923,11 +913,8 @@
               </p>
             </div>
 
-            <div class="pt-4 border-t border-charcoal-800/80 flex items-center justify-between">
-              <span class="text-xs font-mono text-bronze-400 group-hover:text-bronze-300 transition">More  &rarr; </span>
-              <div class="flex items-center gap-1">
-                ${stackMarkup}
-              </div>
+            <div class="pt-4 border-t border-charcoal-800/80">
+              <span class="text-xs font-mono text-bronze-400 group-hover:text-bronze-300 transition block text-right">More  &rarr; </span>
             </div>
           </div>
         `;
@@ -961,15 +948,6 @@
         (v.status === 'Live' ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/40' : 
          (v.status === 'In Beta' || v.status === 'Private Beta') ? 'bg-amber-950/60 text-amber-400 border border-amber-500/40' : 
          'bg-charcoal-800 text-bronze-400 border border-bronze-500/40');
-
-      const stackContainer = document.getElementById('modalVentureStack');
-      if (v.stack && v.stack.length > 0) {
-        stackContainer.innerHTML = v.stack.map(s => 
-          `<span class="px-2.5 py-1 rounded bg-charcoal-850 border border-charcoal-700 text-xs font-mono text-slate-300">${s}</span>`
-        ).join('');
-      } else {
-        stackContainer.innerHTML = `<span class="text-xs font-mono text-slate-500 italic">Proprietary In-House Architecture — Specifications Withheld</span>`;
-      }
 
       const linkContainer = document.getElementById('modalVentureLinkContainer');
       if (v.url) {
