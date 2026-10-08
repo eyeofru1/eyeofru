@@ -1336,15 +1336,31 @@ Applied Enhancements:
       const tbody = document.getElementById('liveInquiriesBody');
       if (!tbody) return;
 
+      // Ingest shared persistent inquiries buffer (instant synchronization with website contact form)
+      let localBuffer = [];
+      try {
+        localBuffer = JSON.parse(localStorage.getItem('eyeofru_inquiries') || '[]');
+      } catch (e) {}
+
       try {
         const resp = await fetch(`${MASTER_WEBHOOK_URL}?action=GET_LEADS&clientName=${encodeURIComponent(CLIENT_NAME)}`);
         const data = await resp.json();
 
-        const items = (data && (data.leads || data.items)) ? (data.leads || data.items) : [];
-        if (items.length > 0) {
-          liveLeads = items;
+        const remoteItems = (data && (data.leads || data.items)) ? (data.leads || data.items) : [];
+        if (remoteItems.length > 0) {
+          // Merge remote items with local buffer avoiding duplicates
+          const merged = [...remoteItems];
+          localBuffer.forEach(loc => {
+            const exists = merged.some(m => (m.email && m.email === loc.email && Math.abs(new Date(m.timestamp) - new Date(loc.timestamp)) < 120000));
+            if (!exists) merged.push(loc);
+          });
+          liveLeads = merged;
           renderLiveInquiries();
           if (showFeedback) showToast("Live inquiries synced with Google Sheet ledger.", "success");
+        } else if (localBuffer.length > 0) {
+          liveLeads = localBuffer;
+          renderLiveInquiries();
+          if (showFeedback) showToast(`Loaded ${localBuffer.length} inbound inquiry(s) from active buffer.`, "success");
         } else {
           liveLeads = [];
           renderLiveInquiries();
@@ -1352,8 +1368,9 @@ Applied Enhancements:
         }
       } catch (err) {
         console.warn("Inquiries sync error:", err);
+        liveLeads = localBuffer;
         renderLiveInquiries();
-        if (showFeedback) showToast("Inquiries ledger reachable. Local buffer active.", "info");
+        if (showFeedback) showToast(localBuffer.length > 0 ? `Loaded ${localBuffer.length} inquiry(s) from active buffer.` : "Inquiries ledger reachable.", "info");
       }
       updateQueueBadge();
     }
@@ -1444,6 +1461,17 @@ Applied Enhancements:
       if (lead) {
         lead.status = newStatus;
       }
+
+      // Sync status change to local persistent buffer
+      try {
+        const localBuffer = JSON.parse(localStorage.getItem('eyeofru_inquiries') || '[]');
+        const target = localBuffer.find(l => l.rowIndex === rowIndex || l.id === rowIndex || (lead && l.email && l.email === lead.email));
+        if (target) {
+          target.status = newStatus;
+          localStorage.setItem('eyeofru_inquiries', JSON.stringify(localBuffer));
+        }
+      } catch (e) {}
+
       renderLiveInquiries();
 
       try {
