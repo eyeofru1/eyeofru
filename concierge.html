@@ -185,34 +185,42 @@
     <div class="lg:col-span-6 flex flex-col h-[600px] lg:h-[calc(100vh-10rem)] min-h-[600px] space-y-6">
       
       <!-- Live Diff Viewer -->
-      <div class="flex-grow rounded-2xl bg-charcoal-850/80 border border-charcoal-800 p-5 flex flex-col justify-between overflow-hidden shadow-xl">
-        <div>
-          <div class="flex items-center justify-between pb-3 border-b border-charcoal-800 mb-4">
-            <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-200">
-              Live Staging Diff Preview
-            </span>
-            <span id="diffStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-charcoal-800 text-slate-400 border border-charcoal-700">
-              IDLE // AWAITING PROPOSAL
-            </span>
+      <div class="flex-grow rounded-2xl bg-charcoal-850/80 border border-charcoal-800 p-4 sm:p-5 flex flex-col justify-between overflow-hidden shadow-xl min-h-0">
+        <div class="flex flex-col flex-grow min-h-0">
+          <div class="flex items-center justify-between pb-2.5 border-b border-charcoal-800 mb-3 flex-shrink-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-200">
+                Staging
+              </span>
+              <span id="diffStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-charcoal-800 text-slate-400 border border-charcoal-700">
+                Idle
+              </span>
+            </div>
+            <button id="expandDiffBtn" onclick="openStagingModal()" class="hidden text-slate-400 hover:text-bronze-300 transition px-2 py-0.5 rounded bg-charcoal-800 border border-charcoal-700/80 text-[10px] font-mono flex items-center gap-1" title="Open Full Screen Inspection">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+              </svg>
+              <span>Inspect ↗</span>
+            </button>
           </div>
 
-          <div id="diffContainer" class="space-y-4 text-xs font-mono">
-            <div class="text-center py-12 text-slate-500">
+          <div id="diffContainer" class="flex-grow overflow-y-auto space-y-3 text-xs font-mono pr-1 min-h-0">
+            <div class="text-center py-10 text-slate-500">
               <svg class="w-8 h-8 mx-auto mb-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
-              No active staging proposal selected.<br>Use the Concierge chat to generate a live diff.
+              No active proposal selected.
             </div>
           </div>
         </div>
 
         <!-- Staging Action Buttons -->
-        <div id="stagingActions" class="hidden pt-4 border-t border-charcoal-800 flex items-center justify-between gap-3">
-          <button onclick="rejectDiff()" class="px-4 py-2 rounded-lg bg-charcoal-900 hover:bg-charcoal-800 text-rose-400 border border-rose-500/30 text-xs font-mono uppercase transition">
-            Reject Proposal
+        <div id="stagingActions" class="hidden pt-3 border-t border-charcoal-800 flex items-center justify-between gap-3 flex-shrink-0 mt-3">
+          <button onclick="rejectDiff()" class="px-3.5 py-2 rounded-lg bg-charcoal-900 hover:bg-charcoal-800 text-rose-400 border border-rose-500/30 text-xs font-mono uppercase transition">
+            Reject
           </button>
-          <button onclick="approveDiff()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-charcoal-950 text-xs font-mono font-bold uppercase transition">
-            Push to Staging Queue →
+          <button onclick="approveDiff()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-charcoal-950 text-xs font-mono font-bold uppercase transition flex items-center gap-1.5">
+            Push to Queue →
           </button>
         </div>
       </div>
@@ -269,6 +277,39 @@
 
   <!-- Toast Container -->
   <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+  <!-- FULLSCREEN STAGING INSPECTION MODAL -->
+  <div id="stagingModal" class="fixed inset-0 z-50 hidden bg-charcoal-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 transition-opacity duration-200">
+    <div class="bg-charcoal-900 border border-charcoal-700 rounded-2xl max-w-3xl w-full flex flex-col max-h-[92vh] shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 border-b border-charcoal-800 flex items-center justify-between flex-shrink-0 bg-charcoal-950/70">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-100">Staging Inspection</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-950/60 text-amber-400 border border-amber-500/40">Staged</span>
+        </div>
+        <button onclick="closeStagingModal()" class="text-slate-400 hover:text-white p-1 rounded hover:bg-charcoal-800 transition" aria-label="Close modal">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body (Smooth Scrolling) -->
+      <div id="modalDiffBody" class="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs font-mono flex-grow">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Modal Footer Actions -->
+      <div class="p-3.5 sm:p-4 border-t border-charcoal-800 flex items-center justify-between gap-3 bg-charcoal-950/50 flex-shrink-0">
+        <button onclick="rejectDiff(); closeStagingModal();" class="px-4 py-2 rounded-lg bg-charcoal-850 hover:bg-charcoal-800 text-rose-400 border border-rose-500/30 text-xs font-mono uppercase transition">
+          Reject
+        </button>
+        <button onclick="approveDiff(); closeStagingModal();" class="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-charcoal-950 text-xs font-mono font-bold uppercase transition flex items-center gap-1.5">
+          Push to Queue →
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let activeProposal = null;
@@ -448,45 +489,81 @@
       return id;
     }
 
+    function openStagingModal() {
+      if (!activeProposal) return;
+      const modal = document.getElementById('stagingModal');
+      const body = document.getElementById('modalDiffBody');
+      if (!modal || !body) return;
+
+      body.innerHTML = `
+        <div class="text-[11px] text-bronze-400 font-semibold mb-2">
+          ${activeProposal.targetSection} › ${activeProposal.field}
+        </div>
+        <div class="rounded-xl border border-charcoal-700 overflow-hidden text-xs font-mono shadow-inner">
+          <div class="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-charcoal-700">
+            <div class="w-full sm:w-1/2 bg-rose-950/15 flex flex-col">
+              <div class="px-3 py-2 bg-rose-950/35 border-b border-rose-900/40 text-[10px] text-rose-400 font-semibold flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Current
+              </div>
+              <div class="p-3.5 text-rose-200 whitespace-pre-wrap leading-relaxed text-xs flex-grow">
+                ${activeProposal.currentValue}
+              </div>
+            </div>
+            <div class="w-full sm:w-1/2 bg-emerald-950/15 flex flex-col">
+              <div class="px-3 py-2 bg-emerald-950/35 border-b border-emerald-900/40 text-[10px] text-emerald-400 font-semibold flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Proposed
+              </div>
+              <div class="p-3.5 text-emerald-200 whitespace-pre-wrap leading-relaxed text-xs flex-grow">
+                ${activeProposal.proposedValue}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      modal.classList.remove('hidden');
+    }
+
+    function closeStagingModal() {
+      const modal = document.getElementById('stagingModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
     function renderDiffProposal(p) {
       const container = document.getElementById('diffContainer');
       const badge = document.getElementById('diffStatusBadge');
       const actions = document.getElementById('stagingActions');
+      const expandBtn = document.getElementById('expandDiffBtn');
 
-      badge.textContent = "STAGED FOR REVIEW";
+      badge.textContent = "Staged";
       badge.className = "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-950/60 text-amber-400 border border-amber-500/40";
 
+      if (expandBtn) expandBtn.classList.remove('hidden');
+
       container.innerHTML = `
-        <div class="p-3 rounded-xl bg-charcoal-950 border border-charcoal-800">
-          <span class="text-[10px] text-slate-500 uppercase block mb-1">Target Dimension:</span>
-          <span class="text-sm font-bold text-slate-100">${p.targetSection} · ${p.field}</span>
+        <div class="flex items-center justify-between text-[11px] text-bronze-400 font-semibold cursor-pointer pb-0.5" onclick="openStagingModal()" title="Click for fullscreen inspection">
+          <span>${p.targetSection} › ${p.field}</span>
+          <span class="text-[10px] text-slate-500 hover:text-slate-300 font-normal">Inspect ↗</span>
         </div>
 
-        <div class="rounded-xl border border-charcoal-700 overflow-hidden text-xs font-mono shadow-inner">
-          <div class="flex flex-col sm:flex-row">
-             <div class="w-full sm:w-1/2 border-b sm:border-b-0 sm:border-r border-charcoal-700 bg-rose-950/10 flex flex-col">
-               <div class="px-3 py-2 bg-rose-950/30 border-b border-rose-900/50 text-[10px] text-rose-400 uppercase font-semibold flex items-center gap-2">
-                 <span class="w-2 h-2 rounded-full bg-rose-500/80"></span> Current Production
+        <div class="rounded-xl border border-charcoal-700/80 overflow-hidden text-xs font-mono shadow-inner cursor-pointer" onclick="openStagingModal()" title="Click for fullscreen inspection">
+          <div class="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-charcoal-700">
+             <div class="w-full sm:w-1/2 bg-rose-950/15 flex flex-col">
+               <div class="px-2.5 py-1.5 bg-rose-950/35 border-b border-rose-900/40 text-[10px] text-rose-400 font-semibold flex items-center gap-1.5">
+                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Current
                </div>
-               <div class="p-3 text-slate-300 whitespace-pre-wrap flex gap-3 flex-grow">
-                 <span class="text-rose-500/50 select-none">-</span>
-                 <span class="text-rose-200">${p.currentValue}</span>
+               <div class="p-2.5 text-rose-200 whitespace-pre-wrap leading-relaxed text-[11px]">
+                 ${p.currentValue}
                </div>
              </div>
-             <div class="w-full sm:w-1/2 bg-emerald-950/10 flex flex-col">
-               <div class="px-3 py-2 bg-emerald-950/30 border-b border-emerald-900/50 text-[10px] text-emerald-400 uppercase font-semibold flex items-center gap-2">
-                 <span class="w-2 h-2 rounded-full bg-emerald-500/80"></span> Proposed Staging
+             <div class="w-full sm:w-1/2 bg-emerald-950/15 flex flex-col">
+               <div class="px-2.5 py-1.5 bg-emerald-950/35 border-b border-emerald-900/40 text-[10px] text-emerald-400 font-semibold flex items-center gap-1.5">
+                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Proposed
                </div>
-               <div class="p-3 text-slate-100 whitespace-pre-wrap flex gap-3 flex-grow">
-                 <span class="text-emerald-500/50 select-none">+</span>
-                 <span class="text-emerald-200">${p.proposedValue}</span>
+               <div class="p-2.5 text-emerald-200 whitespace-pre-wrap leading-relaxed text-[11px]">
+                 ${p.proposedValue}
                </div>
              </div>
           </div>
-        </div>
-
-        <div class="p-3 rounded-xl bg-charcoal-900 border border-charcoal-800 text-slate-400 text-xs">
-          <strong>Rationale:</strong> ${p.clientRationale}
         </div>
       `;
 
@@ -496,14 +573,17 @@
     function rejectDiff() {
       activeProposal = null;
       document.getElementById('diffContainer').innerHTML = `
-        <div class="text-center py-12 text-slate-500">
-          <span class="text-3xl block mb-2">✕</span>
-          Proposal rejected and discarded.
+        <div class="text-center py-10 text-slate-500">
+          <span class="text-2xl block mb-2">✕</span>
+          Proposal discarded.
         </div>
       `;
-      document.getElementById('diffStatusBadge').textContent = "IDLE // AWAITING PROPOSAL";
+      document.getElementById('diffStatusBadge').textContent = "Idle";
       document.getElementById('diffStatusBadge').className = "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-charcoal-800 text-slate-400 border border-charcoal-700";
       document.getElementById('stagingActions').classList.add('hidden');
+      const expandBtn = document.getElementById('expandDiffBtn');
+      if (expandBtn) expandBtn.classList.add('hidden');
+      closeStagingModal();
     }
 
     async function approveDiff() {
