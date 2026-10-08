@@ -1,0 +1,32 @@
+# Credentials & Environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+credentials.json
+.clasprc.json
+.clasp.json
+
+# Dependencies & Environments
+node_modules/
+.venv/
+__pycache__/
+
+# Build & Output
+dist/
+build/
+.next/
+out/
+
+# Artifacts & Scratch (Never pollute repo with debug dumps)
+artifacts/
+scratch/
+*.log
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

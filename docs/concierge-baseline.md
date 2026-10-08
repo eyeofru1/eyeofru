@@ -1,0 +1,452 @@
+# AI Concierge Dashboard (Baseline Template)
+
+This document serves as the reusable baseline for the **Client AI Concierge & Staging Queue** dashboard. It is a standalone, vanilla HTML/JS implementation utilizing Tailwind CSS.
+
+## Core Capabilities
+- **Adaptive Split-Pane UI:** Responsive `flex` layout that stacks on mobile and splits on desktop via `h-[calc(100vh-10rem)]`.
+- **Live State Indicator:** Animated bounce-dot typing indicator for the conversational assistant.
+- **GitHub-Style Diff Viewer:** Custom red/green inset-shadow diff interface for staging proposals.
+- **Non-Blocking Toasts:** Built-in floating notification system (`showToast`).
+- **Air-Gapped Workflow:** Designed to push requests to a Google Apps Script webhook rather than directly mutating production data.
+
+## Source Code
+
+Save the following code as `concierge.html` (or inject the core DOM structures into a modern framework component) in any standard Vite + Tailwind project.
+
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client AI Concierge & Staging Queue — Eye Of Ru Enterprises</title>
+  <meta name="description" content="Authorized partner AI concierge and air-gapped staging queue for site telemetry, content staging, and live diff verification.">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+
+  <!-- Typography Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/src/style.css">
+
+  <script>
+    (function () {
+      try {
+        const storedTheme = localStorage.getItem('theme');
+        if (storedTheme === 'light') {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.add('light');
+        } else {
+          document.documentElement.classList.remove('light');
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const isSuccess = type === 'success';
+      
+      toast.className = `transform transition-all duration-300 translate-y-4 opacity-0 pointer-events-auto px-4 py-3 rounded-xl shadow-2xl border text-xs font-mono flex items-center gap-3 z-50 ${
+        isSuccess ? 'bg-emerald-950 border-emerald-500/30 text-emerald-200' : 'bg-charcoal-800 border-bronze-500/30 text-bronze-200'
+      }`;
+      
+      toast.innerHTML = `
+        <span class="${isSuccess ? 'text-emerald-400' : 'text-bronze-400'} text-lg leading-none">
+          ${isSuccess ? '✓' : 'ℹ'}
+        </span>
+        <span>${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+  </script>
+</head>
+
+<body class="bg-charcoal-900 text-slate-300 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-bronze-500 selection:text-charcoal-950">
+
+  <!-- CONCIERGE TOP NAVIGATION -->
+  <header class="sticky top-0 z-30 bg-charcoal-900/90 border-b border-charcoal-800 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-2 group">
+          <div class="w-8 h-8 rounded-lg bg-charcoal-950 border border-bronze-500/40 flex items-center justify-center">
+            <img src="/assets/logo-emblem.png" alt="Eye Of Ru Emblem" class="w-6 h-6 object-contain">
+          </div>
+          <div>
+            <span class="font-serif text-sm font-bold text-slate-100 block leading-tight">Eye Of Ru</span>
+            <span class="text-[9px] font-mono text-bronze-400 uppercase tracking-widest block">AI Concierge</span>
+          </div>
+        </a>
+
+        <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-charcoal-850 border border-charcoal-700 text-[10px] font-mono text-slate-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          STAGING QUEUE: AIR-GAPPED
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 text-xs font-mono">
+        <a href="/" class="text-slate-400 hover:text-white transition flex items-center gap-1">
+          ← Return to Studio
+        </a>
+        <button onclick="toggleTheme()" class="p-2 rounded-lg border border-charcoal-700 bg-charcoal-850 hover:text-bronze-400 text-slate-300" aria-label="Toggle Theme">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- SPLIT CONSOLE DASHBOARD -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+    
+    <!-- LEFT PANE: CONVERSATIONAL ASSISTANT -->
+    <div class="lg:col-span-6 flex flex-col h-[500px] lg:h-[calc(100vh-10rem)] min-h-[500px] rounded-2xl bg-charcoal-850/80 border border-charcoal-800 overflow-hidden shadow-xl">
+      
+      <!-- Console Header -->
+      <div class="p-4 border-b border-charcoal-800 bg-charcoal-900/60 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-bronze-400"></span>
+          <span class="font-mono text-xs uppercase tracking-wider text-slate-200 font-semibold">Gemini 2.5 Staging Assistant</span>
+        </div>
+        <span class="text-[10px] font-mono text-slate-500">API: v1beta / Cloudflare Edge Proxy</span>
+      </div>
+
+      <!-- Chat History Stream -->
+      <div id="chatHistory" class="flex-grow p-4 overflow-y-auto space-y-4 text-xs">
+        
+        <div class="p-3.5 rounded-xl bg-charcoal-900 border border-charcoal-800 text-slate-300 leading-relaxed">
+          <span class="text-[10px] font-mono text-bronze-400 block font-semibold mb-1">CONCIERGE AGENT</span>
+          Welcome, partner. I am your studio AI Concierge. You can ask me to:
+          <ul class="list-disc pl-4 mt-2 space-y-1 text-slate-400">
+            <li>Update operating hours or contact parameters</li>
+            <li>Propose copy revisions to ventures or studio manifesto</li>
+            <li>Draft new technical dispatches for the research blog</li>
+            <li>Inspect live Core Web Vitals and edge latency metrics</li>
+          </ul>
+          All requested changes generate a visual diff preview in the staging pane on the right before anything touches production.
+        </div>
+
+      </div>
+
+      <!-- Suggested Quick Prompts -->
+      <div class="px-4 py-2 bg-charcoal-900/40 border-t border-charcoal-800/80 flex items-center gap-2 overflow-x-auto text-[10px] font-mono text-slate-400">
+        <span class="text-slate-500 flex-shrink-0">Quick:</span>
+        <button onclick="useQuickPrompt('Audit Core Web Vitals and edge latency metrics')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 flex-shrink-0 transition">
+          Audit CWV Speed
+        </button>
+        <button onclick="useQuickPrompt('Update Friday operating hours to close at 17:00')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 flex-shrink-0 transition">
+          Update Hours
+        </button>
+        <button onclick="useQuickPrompt('Propose new venture card for decentralized quantum auditing')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-700 text-slate-300 flex-shrink-0 transition">
+          Draft Venture
+        </button>
+      </div>
+
+      <!-- Chat Input Form -->
+      <form onsubmit="handleChatSubmit(event)" class="p-3 bg-charcoal-900 border-t border-charcoal-800 flex items-center gap-2">
+        <input type="text" id="chatInput" placeholder="Propose an update or request diagnostics..." class="flex-grow px-3.5 py-2.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-bronze-500 text-xs">
+        <button type="submit" id="sendBtn" class="px-4 py-2.5 rounded-lg bg-bronze-500 hover:bg-bronze-400 text-charcoal-950 font-mono font-bold text-xs uppercase transition">
+          Send
+        </button>
+      </form>
+
+    </div>
+
+    <!-- RIGHT PANE: LIVE DIFF PREVIEW & STAGING QUEUE -->
+    <div class="lg:col-span-6 flex flex-col h-[600px] lg:h-[calc(100vh-10rem)] min-h-[600px] space-y-6">
+      
+      <!-- Live Diff Viewer -->
+      <div class="flex-grow rounded-2xl bg-charcoal-850/80 border border-charcoal-800 p-5 flex flex-col justify-between overflow-hidden shadow-xl">
+        <div>
+          <div class="flex items-center justify-between pb-3 border-b border-charcoal-800 mb-4">
+            <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-200">
+              Live Staging Diff Preview
+            </span>
+            <span id="diffStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-charcoal-800 text-slate-400 border border-charcoal-700">
+              IDLE // AWAITING PROPOSAL
+            </span>
+          </div>
+
+          <div id="diffContainer" class="space-y-4 text-xs font-mono">
+            <div class="text-center py-12 text-slate-500">
+              <svg class="w-8 h-8 mx-auto mb-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              No active staging proposal selected.<br>Use the Concierge chat to generate a live diff.
+            </div>
+          </div>
+        </div>
+
+        <!-- Staging Action Buttons -->
+        <div id="stagingActions" class="hidden pt-4 border-t border-charcoal-800 flex items-center justify-between gap-3">
+          <button onclick="rejectDiff()" class="px-4 py-2 rounded-lg bg-charcoal-900 hover:bg-charcoal-800 text-rose-400 border border-rose-500/30 text-xs font-mono uppercase transition">
+            Reject Proposal
+          </button>
+          <button onclick="approveDiff()" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-charcoal-950 text-xs font-mono font-bold uppercase transition">
+            Push to Staging Queue →
+          </button>
+        </div>
+      </div>
+
+      <!-- Air-Gapped Staging Queue Table -->
+      <div class="h-60 rounded-2xl bg-charcoal-850/80 border border-charcoal-800 p-4 flex flex-col justify-between overflow-hidden shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-200">
+            Agency Review Queue (Google Sheets Ledger)
+          </span>
+          <span class="text-[10px] font-mono text-emerald-400">● 2 Items Staged</span>
+        </div>
+
+        <div class="overflow-y-auto text-xs font-mono">
+          <table class="w-full text-left">
+            <thead class="text-[10px] text-slate-500 border-b border-charcoal-800">
+              <tr>
+                <th class="pb-1">Section</th>
+                <th class="pb-1">Field</th>
+                <th class="pb-1">Status</th>
+                <th class="pb-1 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="stagingQueueBody" class="divide-y divide-charcoal-800/60 text-slate-300">
+              <tr>
+                <td class="py-2 text-bronze-400">SEO Schema</td>
+                <td class="py-2">priceRange</td>
+                <td class="py-2"><span class="px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-400 text-[10px]">PENDING_REVIEW</span></td>
+                <td class="py-2 text-right"><span class="text-[10px] text-slate-500">Antigravity Hook</span></td>
+              </tr>
+              <tr>
+                <td class="py-2 text-bronze-400">Ventures</td>
+                <td class="py-2">MapGap Pro (url)</td>
+                <td class="py-2"><span class="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 text-[10px]">VERIFIED</span></td>
+                <td class="py-2 text-right"><span class="text-[10px] text-slate-500">Live on Edge</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pt-2 border-t border-charcoal-800/60 flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span>Synced via Google Apps Script Webhook</span>
+          <button onclick="showToast('Staging queue synced with client master sheet.', 'info')" class="text-bronze-400 hover:underline">Force Sync ↻</button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer class="bg-charcoal-950 border-t border-charcoal-800 py-6 text-center text-xs font-mono text-slate-500">
+    Eye Of Ru Enterprises, LLC · Autonomous Staging Pipeline · Zero Production Vulnerabilities
+  </footer>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+  <script>
+    let activeProposal = null;
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.classList.remove('light');
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    function useQuickPrompt(text) {
+      document.getElementById('chatInput').value = text;
+      handleChatSubmit(new Event('submit'));
+    }
+
+    async function handleChatSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const query = input.value.trim();
+      if (!query) return;
+
+      appendChatMessage("USER", query);
+      input.value = "";
+
+      // Simulate or call assistant
+      const thinkingId = appendChatMessage("CONCIERGE AGENT", `
+        <div class="flex items-center gap-1.5 h-4 my-1">
+          <span class="w-1.5 h-1.5 bg-emerald-500/60 rounded-full animate-bounce"></span>
+          <span class="w-1.5 h-1.5 bg-emerald-500/60 rounded-full animate-bounce" style="animation-delay: 0.15s"></span>
+          <span class="w-1.5 h-1.5 bg-emerald-500/60 rounded-full animate-bounce" style="animation-delay: 0.3s"></span>
+        </div>
+      `);
+
+      setTimeout(() => {
+        const thinkingEl = document.getElementById(thinkingId);
+        if (thinkingEl) thinkingEl.remove();
+
+        if (query.toLowerCase().includes("speed") || query.toLowerCase().includes("cwv") || query.toLowerCase().includes("audit")) {
+          appendChatMessage("CONCIERGE AGENT", "DOM Diagnostic Scan Complete: Desktop PSI: 99/100, Mobile PSI: 98/100. First Contentful Paint: 0.8s, Cumulative Layout Shift: 0.00. Edge global latency: 8.4ms across Cloudflare Atlanta & Miami edge nodes.");
+        } else if (query.toLowerCase().includes("hour")) {
+          activeProposal = {
+            targetSection: "Operating Schedule",
+            field: "Friday Hours",
+            currentValue: "09:00 - 18:00 EST",
+            proposedValue: "09:00 - 17:00 EST",
+            clientRationale: "Requested early Friday studio shutdown"
+          };
+          renderDiffProposal(activeProposal);
+          appendChatMessage("CONCIERGE AGENT", "I have generated a live diff proposal for the Operating Schedule. Review the side-by-side comparison in the right pane.");
+        } else {
+          activeProposal = {
+            targetSection: "Ventures Catalog",
+            field: "Quantum Ledger Auditing",
+            currentValue: "[Field Not Present]",
+            proposedValue: "Title: Quantum Ledger Auditing\nStatus: In Incubation\nSummary: Formal mathematical verification suite for quantum-resistant cryptographic contracts.",
+            clientRationale: query
+          };
+          renderDiffProposal(activeProposal);
+          appendChatMessage("CONCIERGE AGENT", "Drafted venture addition proposal per your prompt. Inspect the diff and push to the staging queue when satisfied.");
+        }
+      }, 800);
+    }
+
+    function appendChatMessage(sender, text) {
+      const history = document.getElementById('chatHistory');
+      const id = "msg-" + Date.now();
+      const div = document.createElement('div');
+      div.id = id;
+      div.className = sender === "USER" 
+        ? "p-3 rounded-xl bg-charcoal-800 text-white ml-8 text-right font-mono"
+        : "p-3 rounded-xl bg-charcoal-900 border border-charcoal-800 text-slate-300 mr-8 leading-relaxed";
+
+      div.innerHTML = `
+        <span class="text-[10px] font-mono ${sender === "USER" ? "text-bronze-400" : "text-emerald-400"} block font-semibold mb-1">${sender}</span>
+        ${text}
+      `;
+      history.appendChild(div);
+      history.scrollTop = history.scrollHeight;
+      return id;
+    }
+
+    function renderDiffProposal(p) {
+      const container = document.getElementById('diffContainer');
+      const badge = document.getElementById('diffStatusBadge');
+      const actions = document.getElementById('stagingActions');
+
+      badge.textContent = "STAGED FOR REVIEW";
+      badge.className = "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-950/60 text-amber-400 border border-amber-500/40";
+
+      container.innerHTML = `
+        <div class="p-3 rounded-xl bg-charcoal-950 border border-charcoal-800">
+          <span class="text-[10px] text-slate-500 uppercase block mb-1">Target Dimension:</span>
+          <span class="text-sm font-bold text-slate-100">${p.targetSection} · ${p.field}</span>
+        </div>
+
+        <div class="rounded-xl border border-charcoal-700 overflow-hidden text-xs font-mono shadow-inner">
+          <div class="flex flex-col sm:flex-row">
+             <div class="w-full sm:w-1/2 border-b sm:border-b-0 sm:border-r border-charcoal-700 bg-rose-950/10 flex flex-col">
+               <div class="px-3 py-2 bg-rose-950/30 border-b border-rose-900/50 text-[10px] text-rose-400 uppercase font-semibold flex items-center gap-2">
+                 <span class="w-2 h-2 rounded-full bg-rose-500/80"></span> Current Production
+               </div>
+               <div class="p-3 text-slate-300 whitespace-pre-wrap flex gap-3 flex-grow">
+                 <span class="text-rose-500/50 select-none">-</span>
+                 <span class="text-rose-200">${p.currentValue}</span>
+               </div>
+             </div>
+             <div class="w-full sm:w-1/2 bg-emerald-950/10 flex flex-col">
+               <div class="px-3 py-2 bg-emerald-950/30 border-b border-emerald-900/50 text-[10px] text-emerald-400 uppercase font-semibold flex items-center gap-2">
+                 <span class="w-2 h-2 rounded-full bg-emerald-500/80"></span> Proposed Staging
+               </div>
+               <div class="p-3 text-slate-100 whitespace-pre-wrap flex gap-3 flex-grow">
+                 <span class="text-emerald-500/50 select-none">+</span>
+                 <span class="text-emerald-200">${p.proposedValue}</span>
+               </div>
+             </div>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-charcoal-900 border border-charcoal-800 text-slate-400 text-xs">
+          <strong>Rationale:</strong> ${p.clientRationale}
+        </div>
+      `;
+
+      actions.classList.remove('hidden');
+    }
+
+    function rejectDiff() {
+      activeProposal = null;
+      document.getElementById('diffContainer').innerHTML = `
+        <div class="text-center py-12 text-slate-500">
+          <span class="text-3xl block mb-2">✕</span>
+          Proposal rejected and discarded.
+        </div>
+      `;
+      document.getElementById('diffStatusBadge').textContent = "IDLE // AWAITING PROPOSAL";
+      document.getElementById('diffStatusBadge').className = "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-charcoal-800 text-slate-400 border border-charcoal-700";
+      document.getElementById('stagingActions').classList.add('hidden');
+    }
+
+    async function approveDiff() {
+      if (!activeProposal) return;
+
+      const tbody = document.getElementById('stagingQueueBody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="py-2 text-bronze-400">${activeProposal.targetSection}</td>
+        <td class="py-2">${activeProposal.field}</td>
+        <td class="py-2"><span class="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 text-[10px]">QUEUED_REVIEW</span></td>
+        <td class="py-2 text-right"><span class="text-[10px] text-slate-500">Awaiting Antigravity</span></td>
+      `;
+      tbody.prepend(tr);
+
+      // Post to Google Apps Script Webhook
+      try {
+        await fetch("https://script.google.com/macros/s/AKfycbwK1U9lZTjO0gi2-ZFUkzJbPiH3Y2n2kTfiKZ4bpFLF3rk3DdU4_R8RyF7NM-ClwG5y5g/exec", {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            timestamp: new Date().toISOString(),
+            clientId: "eye-of-ru-enterprises",
+            action: "STAGE_UPDATE",
+            ...activeProposal
+          })
+        });
+      } catch (e) {
+        console.warn("Webhook logged locally:", e);
+      }
+
+      showToast("Proposal approved and queued to Google Sheet for Antigravity verification!", "success");
+      rejectDiff();
+    }
+  </script>
+
+</body>
+</html>
+
+```
+
+## Integration Steps
+1. **Tailwind Processing**: Ensure Tailwind is tracking your HTML files (e.g., `content: ["./*.html"]` in `tailwind.config.js`).
+2. **Webhook Connection**: Update the `fetch()` URL in the `approveDiff()` function to point to your new project's specific Google Apps Script webhook or backend staging endpoint.
+3. **LLM Proxy Connection**: Replace the mocked `setTimeout` logic inside `handleChatSubmit` with an edge-proxied API call (e.g., Cloudflare Workers/Pages) to the Gemini API to handle dynamic client requests securely.

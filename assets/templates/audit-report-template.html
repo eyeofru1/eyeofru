@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aura Diagnostic Audit Report — {{CLIENT_NAME}}</title>
+  <style>
+    @page {
+      size: letter;
+      margin: 0.5in;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+      font-size: 11pt;
+      line-height: 1.5;
+    }
+    .page {
+      min-height: 9.8in;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      padding: 0.2in 0;
+    }
+    .page:last-child {
+      page-break-after: avoid;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: #0f172a;
+      padding: 3px;
+      display: inline-block;
+    }
+    .brand-title {
+      font-size: 16pt;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+    .brand-sub {
+      font-size: 8.5pt;
+      color: #c89b4e;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .meta-box {
+      text-align: right;
+      font-size: 8.5pt;
+      color: #64748b;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 10px;
+      font-size: 8pt;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    h1 {
+      font-size: 20pt;
+      color: #0f172a;
+      margin: 0 0 8px 0;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    h2 {
+      font-size: 13pt;
+      color: #0f172a;
+      margin: 16px 0 8px 0;
+      font-weight: 700;
+      border-left: 3px solid #c89b4e;
+      padding-left: 8px;
+    }
+    p {
+      margin: 0 0 10px 0;
+      color: #334155;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .metric-value {
+      font-size: 26pt;
+      font-weight: 800;
+      color: #0f172a;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      line-height: 1.1;
+    }
+    .metric-label {
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .bounce-box {
+      background: #0f172a;
+      color: #f8fafc;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .bounce-box h3 {
+      color: #c89b4e;
+      margin: 0 0 6px 0;
+      font-size: 11pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 9pt;
+    }
+    th {
+      background: #0f172a;
+      color: #ffffff;
+      text-align: left;
+      padding: 8px 10px;
+      font-weight: 600;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+      color: #334155;
+    }
+    tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .badge-critical { background: #fee2e2; color: #991b1b; }
+    .badge-high { background: #fef3c7; color: #92400e; }
+    .badge-medium { background: #e0f2fe; color: #075985; }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE 1: EXECUTIVE SCORECARD & SPEED GAUGES -->
+  <div class="page">
+    <div>
+      <div class="header">
+        <div class="brand-group">
+          <img src="{{LOGO_DATA_URI}}" alt="Eye Of Ru Enterprises" class="brand-logo" />
+          <div>
+            <div class="brand-title">Eye Of Ru Enterprises</div>
+            <div class="brand-sub">Aura Diagnostic Engine // Studio Audit Brief</div>
+          </div>
+        </div>
+        <div class="meta-box">
+          <div>CLIENT: {{CLIENT_NAME}}</div>
+          <div>TARGET: {{TARGET_URL}}</div>
+          <div>DATE: {{AUDIT_DATE}}</div>
+        </div>
+      </div>
+
+      <h1>Technical Performance & Friction Assessment</h1>
+      <p>
+        An objective, empirical audit analyzing digital infrastructure health, mobile responsiveness, asset efficiency, and technical SEO foundations for <strong>{{TARGET_URL}}</strong>.
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="metric-value">{{FRICTION_SCORE}}/100</div>
+          <div class="metric-label">Aura Performance Score (Mobile)</div>
+        </div>
+        <div class="card">
+          <div class="metric-value">{{DESKTOP_SCORE}}/100</div>
+          <div class="metric-label">Aura Performance Score (Desktop)</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="metric-value">{{MOBILE_LCP}}s</div>
+          <div class="metric-label">Largest Contentful Paint (LCP)</div>
+        </div>
+        <div class="card">
+          <div class="metric-value">{{MOBILE_TBT}}ms</div>
+          <div class="metric-label">Total Blocking Time (TBT)</div>
+        </div>
+      </div>
+
+      <div class="bounce-box">
+        <h3>Estimated Abandonment Impact (Bounce Cost)</h3>
+        <p style="margin: 0; color: #e2e8f0; font-size: 10pt;">
+          {{BOUNCE_IMPACT_ANALYSIS}}
+        </p>
+      </div>
+
+      <h2>Core Telemetry Summary</h2>
+      <p>
+        Current web architecture is burdened by legacy runtime overhead, unoptimized media assets, and lack of edge-rendered static compilation. Transitioning to an edge static distribution model eliminates up to 90% of dynamic client-side rendering lag.
+      </p>
+    </div>
+
+    <div class="footer">
+      <div>Prepared by Eye Of Ru Enterprises, LLC &bull; State of Florida, USA</div>
+      <div>Page 1 of 3</div>
+    </div>
+  </div>
+
+  <!-- PAGE 2: BOTTLENECK & REMEDIATION MATRIX -->
+  <div class="page">
+    <div>
+      <div class="header">
+        <div class="brand-group">
+          <img src="{{LOGO_DATA_URI}}" alt="Eye Of Ru Enterprises" class="brand-logo" />
+          <div>
+            <div class="brand-title">Eye Of Ru Enterprises</div>
+            <div class="brand-sub">Bottleneck &amp; Remediation Matrix (Fix Table)</div>
+          </div>
+        </div>
+        <div class="meta-box">
+          <div>TARGET: {{TARGET_URL}}</div>
+        </div>
+      </div>
+
+      <h2>The 5-Pillar Friction Breakdown</h2>
+      <p>
+        Detailed line-item diagnosis translating low-level technical faults into direct commercial liabilities and the corresponding modern fix.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 18%;">Pillar / Vector</th>
+            <th style="width: 28%;">Observed Bottleneck</th>
+            <th style="width: 26%;">Business &amp; Revenue Liability</th>
+            <th style="width: 18%;">The Modern Fix</th>
+            <th style="width: 10%;">Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{FIX_TABLE_ROWS}}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <div>Confidential Client Diagnostic &bull; Eye Of Ru Enterprises, LLC</div>
+      <div>Page 2 of 3</div>
+    </div>
+  </div>
+
+  <!-- PAGE 3: MODERN ENGINEERING ROADMAP -->
+  <div class="page">
+    <div>
+      <div class="header">
+        <div class="brand-group">
+          <img src="{{LOGO_DATA_URI}}" alt="Eye Of Ru Enterprises" class="brand-logo" />
+          <div>
+            <div class="brand-title">Eye Of Ru Enterprises</div>
+            <div class="brand-sub">Engineering Roadmap &amp; Expected ROI</div>
+          </div>
+        </div>
+        <div class="meta-box">
+          <div>PROPOSAL SPECIFICATION</div>
+        </div>
+      </div>
+
+      <h2>Target Architecture &amp; Conversion Velocity</h2>
+      <p>
+        Transforming the digital presence of <strong>{{CLIENT_NAME}}</strong> into a high-speed customer acquisition engine engineered to maximize mobile visitor retention and eliminate conversion friction.
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">Mobile Render Velocity</div>
+          <div class="metric-value" style="color: #059669;">&lt; 1.0s</div>
+          <p style="font-size: 8.5pt; color: #64748b; margin-top: 4px;">Sub-second instantaneous paint directly eliminating mobile visitor abandonment.</p>
+        </div>
+        <div class="card">
+          <div style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">Verified Lead Funnel</div>
+          <div class="metric-value" style="color: #059669;">100% Human</div>
+          <p style="font-size: 8.5pt; color: #64748b; margin-top: 4px;">Zero-friction bot filtering delivering clean, verified inquiries in real-time without spam.</p>
+        </div>
+      </div>
+
+      <h2>Deliverables Included in Rebuild Package</h2>
+      <div class="card" style="margin-bottom: 16px;">
+        <ul style="margin: 0; padding-left: 20px; font-size: 9pt; color: #334155; line-height: 1.7;">
+          <li><strong>High-Velocity Sovereign Edge Architecture</strong>: High-contrast Dark/Light studio tokens with zero-FOUC device matching.</li>
+          <li><strong>Automated Lead Capture &amp; Sheet Delivery</strong>: Real-time asynchronous lead routing with direct client alert notifications.</li>
+          <li><strong>Strict 1:1 301 Redirect Protection</strong>: 100% search engine crawl equity and legacy ranking preservation.</li>
+          <li><strong>Complete Schema.org Graph Integration</strong>: Validated JSON-LD structured data for Google Knowledge Graph and local search authority.</li>
+          <li><strong>Automated Client Cloud Scaffolding</strong>: Dedicated Google Drive repository for operational lead sheets, brand media, and audit reports.</li>
+        </ul>
+      </div>
+
+      <h2>Consultation &amp; Next Steps</h2>
+      <p>
+        To authorize deployment or schedule technical review, contact studio leadership directly:
+      </p>
+      <div class="card" style="background: #0f172a; color: #f8fafc;">
+        <div style="font-weight: 700; color: #c89b4e; font-size: 11pt; margin-bottom: 4px;">Eye Of Ru Enterprises, LLC &mdash; Executive Inquiries</div>
+        <div style="font-size: 9pt; color: #cbd5e1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">
+          Email: agency@eyeofruenterprisesllc.com &bull; Web: https://eyeofruenterprisesllc.pages.dev
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>All Sovereign Rights Reserved &bull; Eye Of Ru Enterprises, LLC</div>
+      <div>Page 3 of 3</div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+﻿# Cloudflare Pages 1:1 SEO Redirects for Rebuild: eyeofruenterprisesllc.pages.dev
+# Generated at: 2026-10-01 16:34:53
+
+/index.html              /                 301
+/home                    /                 301
+/about                    /about                 301
+/about-us                 /about                 301
+/contact                  /contact                 301
+/contact-us               /contact                 301
+/our-services             /services                 301
+/privacy-policy           /privacy                 301
+/services                 /services                 301
+/terms-of-service         /services                 301
+/*                       /                 302

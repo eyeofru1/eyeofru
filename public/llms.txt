@@ -1,0 +1,19 @@
+# Eye Of Ru Enterprises
+
+> Sovereign high-velocity web engineering, digital venture studio, and automated performance diagnostic lab.
+
+## About
+Eye Of Ru Enterprises, LLC is a private software engineering lab and digital venture studio based in Florida, USA. We build and deploy sovereign, sub-second web applications, client diagnostic pipelines, and automated business workflows on Cloudflare Pages edge infrastructure.
+
+## Core Capabilities & Services
+- **Sovereign High-Velocity Web Engineering**: Ultra-fast, dual-theme (Dark/Light) edge static web applications with sub-second Largest Contentful Paint (LCP < 1.0s), zero FOUC, and zero recurring platform rent.
+- **Aura Diagnostic Engine (ADE)**: Empirical 5-pillar site performance audits analyzing Core Web Vitals, asset bloat, third-party script drag, touch ergonomics, structured schema, and AI agent discoverability.
+- **Automated Lead Pipelines**: Zero-friction lead capture routing directly to private client Google Drive repositories and Google Sheets with instant email alerts.
+- **Generative Engine Optimization (GEO & AEO)**: Full Schema.org `@graph` entity mapping for Google Knowledge Graph, Local Pack, and AI answer engine citation (SearchGPT, Perplexity, Gemini, Claude).
+- **Client AI Concierge**: Embedded client staging drawer enabling conversational site updates with live diff previews.
+
+## Contact & Inquiries
+- **Executive Inquiries**: contact@eyeofruenterprisesllc.com
+- **Web**: https://eyeofruenterprisesllc.pages.dev
+- **Corporate Jurisdiction**: State of Florida, USA
+- **Contact Protocol**: Standard RFC mailto: transmission and Turnstile-verified executive briefing web form. Client consultations are conducted by executive appointment only.

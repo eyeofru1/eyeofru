@@ -1,0 +1,112 @@
+﻿{
+    "source":  "Web_Scrape",
+    "targetUrl":  "https://eyeofruenterprisesllc.pages.dev",
+    "domain":  "eyeofruenterprisesllc.pages.dev",
+    "retrievedAt":  "2026-10-01T16:34:53.9086531-04:00",
+    "business":  {
+                     "name":  "Eye Of Ru Enterprises — Digital Venture Studio \u0026 Software Lab",
+                     "legalName":  "Eye Of Ru Enterprises — Digital Venture Studio \u0026 Software Lab",
+                     "tagline":  "Eye Of Ru Enterprises, LLC is a private digital venture studio and software engineering lab. We incubate specialized web applications, autonomous pipelines, and resilient digital infrastructure.",
+                     "headline":  "A",
+                     "subheadline":  "Eye Of Ru Enterprises, LLC is a private digital venture studio and software engineering lab. We incubate specialized web applications, autonomous pipelines, and resilient digital infrastructure.",
+                     "domain":  "eyeofruenterprisesllc.pages.dev",
+                     "themePreference":  "Dark (Default)"
+                 },
+    "extractedHeadings":  [
+                              {
+                                  "level":  "h1",
+                                  "text":  "Architecting specialized software ventures \u0026 resilient digital systems."
+                              },
+                              {
+                                  "level":  "h2",
+                                  "text":  "Software built with mathematical discipline, not speculative bloat."
+                              },
+                              {
+                                  "level":  "h2",
+                                  "text":  "Featured Ventures \u0026 Systems"
+                              },
+                              {
+                                  "level":  "h2",
+                                  "text":  "Studio Disciplines"
+                              },
+                              {
+                                  "level":  "h3",
+                                  "text":  "Edge Web Systems"
+                              },
+                              {
+                                  "level":  "h3",
+                                  "text":  "Spatial Telemetry"
+                              },
+                              {
+                                  "level":  "h3",
+                                  "text":  "Autonomous Workflows"
+                              },
+                              {
+                                  "level":  "h3",
+                                  "text":  "Resilient Tooling"
+                              },
+                              {
+                                  "level":  "h2",
+                                  "text":  "Executive Inquiries"
+                              },
+                              {
+                                  "level":  "h3",
+                                  "text":  "Correspondence Received"
+                              },
+                              {
+                                  "level":  "h3",
+                                  "text":  "Privacy Standards"
+                              },
+                              {
+                                  "level":  "h3",
+                                  "text":  "Terms of Operation"
+                              },
+                              {
+                                  "level":  "h3",
+                                  "text":  "Corporate Disclosures"
+                              },
+                              {
+                                  "level":  "h3",
+                                  "text":  "${v.title}"
+                              }
+                          ],
+    "pillars":  [
+                    {
+                        "title":  "Software built with mathematical discipline, not speculative bloat.",
+                        "description":  "Eye Of Ru Enterprises is a private technology studio and incubation lab. We design, build, and deploy specialized web applications, autonomous automation pipelines, and high-performance digital tools from concept to scale."
+                    },
+                    {
+                        "title":  "Featured Ventures \u0026 Systems",
+                        "description":  "Modern technology has become burdened by recursive layers of dependencies, platform subscription rent, and fragile monolithic frameworks. At Eye Of Ru Enterprises, our studio thesis centers on architectural parsimony: building software that solves concrete, high-leverage commercial bottlenecks while maximizing speed, security, and operational autonomy."
+                    },
+                    {
+                        "title":  "Studio Disciplines",
+                        "description":  "Whether engineering algorithmic telemetry tools for local search optimization, autonomous orchestration pipelines, or sub-second edge-rendered web interfaces, every asset incubated in our lab is designed to be lean, proprietary, and fundamentally owned from the metal up."
+                    },
+                    {
+                        "title":  "Executive Inquiries",
+                        "description":  "Zero dependence on rent-seeking platforms. Every product operates on proprietary or edge-distributed foundations."
+                    }
+                ],
+    "discoveredLegacyPaths":  [
+                                  "/about",
+                                  "/about-us",
+                                  "/contact",
+                                  "/contact-us",
+                                  "/our-services",
+                                  "/privacy-policy",
+                                  "/services",
+                                  "/terms-of-service"
+                              ],
+    "rawTextSamples":  [
+                           "Eye Of Ru Enterprises is a private technology studio and incubation lab. We design, build, and deploy specialized web applications, autonomous automation pipelines, and high-performance digital tools from concept to scale.",
+                           "Modern technology has become burdened by recursive layers of dependencies, platform subscription rent, and fragile monolithic frameworks. At Eye Of Ru Enterprises, our studio thesis centers on architectural parsimony: building software that solves concrete, high-leverage commercial bottlenecks while maximizing speed, security, and operational autonomy.",
+                           "Whether engineering algorithmic telemetry tools for local search optimization, autonomous orchestration pipelines, or sub-second edge-rendered web interfaces, every asset incubated in our lab is designed to be lean, proprietary, and fundamentally owned from the metal up.",
+                           "Zero dependence on rent-seeking platforms. Every product operates on proprietary or edge-distributed foundations.",
+                           "Eliminating database overhead and script latency. Real-world performance engineered for instant responsiveness."
+                       ],
+    "addons":  {
+                   "blog":  "Technical Insights \u0026 Articles",
+                   "concierge":  "Client AI Concierge \u0026 Staging Queue Dashboard (/concierge)"
+               }
+}

@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    scroll-behavior: smooth;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+  }
+}
+
+@layer utilities {
+  .bg-mesh-glow {
+    background-image: 
+      radial-gradient(circle at 15% 15%, rgba(200, 155, 78, 0.08) 0%, transparent 45%),
+      radial-gradient(circle at 85% 70%, rgba(200, 155, 78, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 50% 100%, rgba(26, 30, 36, 0.6) 0%, transparent 70%);
+  }
+
+  .bronze-gradient-text {
+    background: linear-gradient(135deg, #fdf4dc 0%, #e5be7d 45%, #c89b4e 75%, #8a5f22 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .bronze-border-glow:hover {
+    box-shadow: 0 0 25px -4px rgba(200, 155, 78, 0.22);
+  }
+
+  .specular-hairline {
+    box-shadow: inset 0 1px 0 0 rgba(200, 155, 78, 0.15);
+  }
+}
+
+/* Light Theme Precision Overrides & WCAG AA Contrast Compliance */
+html.light body {
+  background-color: #f8fafc !important;
+  color: #1e293b !important;
+}
+
+/* Header & Navigation */
+html.light header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light header nav a {
+  color: #475569 !important;
+}
+
+html.light header nav a:hover {
+  color: #92400e !important;
+}
+
+/* Mobile Drawer (#mobileMenu) Synchronization */
+html.light #mobileMenu {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light #mobileMenu a {
+  color: #1e293b !important;
+}
+
+html.light #mobileMenu a:hover {
+  color: #92400e !important;
+}
+
+html.light #mobileMenu a[href="#contact"] {
+  background-color: #92400e !important;
+  color: #ffffff !important;
+}
+
+/* Telemetry Pills & Chips */
+html.light .rounded-full[class*="bg-charcoal"] {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .rounded-full[class*="bg-charcoal"] span {
+  color: #334155 !important;
+}
+
+/* Universal Charcoal Surface Overrides (Handles Opacity & Variant Selectors) */
+html.light [class*="bg-charcoal-950"] { background-color: #f1f5f9 !important; }
+html.light [class*="bg-charcoal-900"] { background-color: #ffffff !important; }
+html.light [class*="bg-charcoal-850"] { background-color: #f8fafc !important; }
+html.light [class*="bg-charcoal-800"] { background-color: #f1f5f9 !important; }
+html.light [class*="bg-charcoal-700"] { background-color: #e2e8f0 !important; }
+
+/* Universal Typography Overrides */
+html.light .text-slate-100 { color: #0f172a !important; }
+html.light .text-slate-200 { color: #1e293b !important; }
+html.light .text-slate-300 { color: #334155 !important; }
+html.light .text-slate-400 { color: #475569 !important; }
+html.light .text-slate-500 { color: #64748b !important; }
+
+/* Universal Borders */
+html.light [class*="border-charcoal-"] { border-color: #e2e8f0 !important; }
+
+/* Accent Inversion for Light Theme (WCAG AA Compliant >= 5.8:1) */
+html.light .text-bronze-300,
+html.light .text-bronze-400,
+html.light .text-bronze-500 {
+  color: #92400e !important; /* Deep burnished amber */
+}
+
+html.light [class*="border-bronze-"] {
+  border-color: rgba(146, 64, 14, 0.35) !important;
+}
+
+html.light .bg-bronze-500,
+html.light .bg-bronze-600 {
+  background-color: #92400e !important;
+  color: #ffffff !important;
+}
+
+html.light .bg-bronze-500:hover,
+html.light .bg-bronze-600:hover {
+  background-color: #78350f !important;
+}
+
+/* Header & Hero Outline Buttons in Light Theme */
+html.light a[href="#contact"][class*="bg-charcoal-950"] {
+  background-color: #ffffff !important;
+  border-color: rgba(146, 64, 14, 0.4) !important;
+  color: #92400e !important;
+}
+
+html.light a[href="#contact"][class*="bg-charcoal-950"]:hover {
+  background-color: #fef3c7 !important;
+  border-color: #92400e !important;
+}
+
+/* Modals in Light Mode */
+html.light [id$="Modal"] [class*="bg-charcoal-900"],
+html.light [id$="Modal"] .bg-charcoal-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Form Inputs in Light Mode */
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light input:focus,
+html.light textarea:focus,
+html.light select:focus {
+  border-color: #92400e !important;
+  box-shadow: 0 0 0 2px rgba(146, 64, 14, 0.2) !important;
+}
+
+/* Ambient Gradients */
+html.light .bg-mesh-glow {
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(146, 64, 14, 0.04) 0%, transparent 45%),
+    radial-gradient(circle at 85% 70%, rgba(146, 64, 14, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 50% 100%, rgba(226, 232, 240, 0.8) 0%, transparent 70%) !important;
+}
+
+html.light .bronze-gradient-text {
+  background: linear-gradient(135deg, #92400e 0%, #78350f 50%, #451a03 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+html.light .specular-hairline {
+  box-shadow: inset 0 1px 0 0 rgba(200, 155, 78, 0.25) !important;
+}
+
+/* Venture Filter Buttons - Base / Dark Mode */
+.filter-btn {
+  color: #94a3b8;
+  background-color: transparent;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  color: #ffffff;
+}
+
+.filter-btn.active {
+  background-color: #1a1e24 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Venture Filter Buttons - Light Mode High Contrast Parity */
+html.light .filter-btn {
+  color: #475569 !important;
+}
+
+html.light .filter-btn:hover {
+  color: #0f172a !important;
+}
+
+html.light .filter-btn.active {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25) !important;
+}
+
+/* Status Badges in Light Mode */
+html.light .text-emerald-400 { color: #047857 !important; }
+html.light [class*="bg-emerald-950"] {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+
+html.light .text-amber-400 { color: #b45309 !important; }
+html.light [class*="bg-amber-950"] {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+/* Venture Cards in Light Mode */
+html.light #ventures-grid > div {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light #ventures-grid > div:hover {
+  border-color: rgba(146, 64, 14, 0.5) !important;
+  box-shadow: 0 10px 15px -3px rgba(146, 64, 14, 0.08), 0 4px 6px -4px rgba(146, 64, 14, 0.05) !important;
+}
