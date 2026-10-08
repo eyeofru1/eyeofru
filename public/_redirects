@@ -21,4 +21,3 @@
 /dashboard               /concierge        301
 /client-portal           /concierge        301
 /concierge               /concierge.html   200
-/*                       /                 302
