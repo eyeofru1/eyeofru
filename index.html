@@ -344,7 +344,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
         
         <!-- Live Node Telemetry Chip -->
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-charcoal-850/90 border border-slate-300 dark:border-charcoal-700/80 mb-6 sm:mb-8 backdrop-blur-sm shadow-sm max-w-[92vw]">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-100 dark:bg-charcoal-850/90 border border-slate-300 dark:border-charcoal-700/80 mb-6 sm:mb-8 backdrop-blur-sm shadow-sm max-w-[92vw]">
           <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)] dark:shadow-[0_0_8px_rgba(52,211,153,0.7)] flex-shrink-0"></span>
           <span class="text-[9px] sm:text-[11px] font-mono tracking-wider text-slate-700 dark:text-slate-300 truncate">
             PRIVATE VENTURE STUDIO · STATE OF FLORIDA · EST. 2026
@@ -609,7 +609,7 @@
 
             <div class="text-center">
               <p class="text-[11px] font-mono text-slate-500">
-                Transmissions route asynchronously to Google Sheets via secure webhook. Zero third-party platform rent.
+                Your transmission is routed securely.
               </p>
             </div>
           </form>
@@ -689,11 +689,6 @@
       <div class="pt-8 border-t border-charcoal-800/60 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-slate-500 gap-4">
         <div id="footerCopyright" onclick="handleStealthConciergeTrigger(event)" class="cursor-pointer select-none" title="Eye Of Ru Enterprises">
           <span id="footerCopyrightSymbol" class="inline-block mr-1">©</span>2026 Eye Of Ru Enterprises, LLC. All Sovereign Rights Reserved.
-        </div>
-        <div class="flex items-center gap-4">
-          <a href="#" class="text-slate-400 hover:text-bronze-300 transition flex items-center gap-1 font-mono text-xs">
-            Back to Top &uarr;
-          </a>
         </div>
       </div>
 
@@ -1156,6 +1151,13 @@
       }
     });
   </script>
+
+  <!-- FLOATING BACK TO TOP BUTTON -->
+  <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="fixed bottom-6 right-6 p-3 rounded-lg bg-charcoal-800 border border-charcoal-700 hover:border-bronze-500/50 hover:bg-charcoal-850 text-slate-400 hover:text-bronze-300 shadow-xl z-50 transition-all duration-300 group" aria-label="Back to Top">
+    <svg class="w-5 h-5 transform group-hover:-translate-y-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+    </svg>
+  </button>
 
 </body>
 </html>
