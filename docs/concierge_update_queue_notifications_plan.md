@@ -1,127 +1,156 @@
-# Architectural Plan: AI Concierge Update Queue & Approval Notification System
+# Architectural Plan: AI Concierge Update Queue & Approval Notification System (V2)
 
 **Studio Venture**: Eye Of Ru Enterprises, LLC  
 **Component**: Client AI Concierge (`/concierge`) → Staging Queue → Operator Notification & Approval Pipeline  
-**Design Principles**: Air-Gapped Safety, Zero Silent Requests, Sovereign Multi-Channel Delivery, Frictionless Antigravity Sync  
+**Design Principles**: Air-Gapped Safety, Zero Silent Requests, Sovereign Email Delivery, Dynamic Status Reflection, 2-Step Verification for High-Impact Updates  
 
 ---
 
-## 1. Executive Summary
+## 1. Executive Summary & User Decisions
 
-When an authorized client interacts with the **AI Concierge** (`/concierge`), the assistant generates structured, side-by-side diff proposals (covering copy, business hours, venture articles, and UI styling). When the client clicks **"Push to Queue →"**, this modification must never touch the live production branch directly. 
+Following operator review, the notification and approval architecture is specified as follows:
 
-Instead, it enters an **air-gapped human-in-the-loop staging queue**. To ensure rapid turnaround without requiring operators to manually poll spreadsheets, we require an **active notification and triage architecture** that alerts the Eye Of Ru engineering team the exact second a modification is queued.
+1. **Email as Exclusive Notification Channel**: High-contrast visual HTML diff alerts delivered instantly via `agency@eyeofruenterprisesllc.com`.
+2. **Local Antigravity Operator Tooling (`Sync-StagingQueue.ps1`)**: Native PowerShell utility to pull, inspect colorized terminal diffs, and approve/flag/reject queued proposals directly in the IDE.
+3. **Two-Way Feedback & Live Concierge Panel Reflection**:
+   - When updates are deployed, automated confirmation emails dispatch to the client.
+   - The Concierge UI (`/concierge.html`) dynamically queries and renders the live staging queue stages (`PENDING_REVIEW`, `UNDER_REVIEW`, `REQUIRES_2STEP`, `DEPLOYED`, `REJECTED`).
+4. **Risk-Based 2-Step Verification (`REQUIRES_2STEP` / `UNDER_REVIEW`)**:
+   - Significant, high-impact, or unusual updates (e.g. rate changes, routing, legal terms, major redesigns) trigger automated or operator-flagged 2-step verification (agency phone confirmation required before deployment).
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer["1. Client Interaction (/concierge)"]
-        CLIENT["Authorized Client"] -->|Converses with Assistant| DIFF["Live Diff Preview (Current vs Proposed)"]
-        DIFF -->|"Clicks 'Push to Queue →'"| DISPATCH["POST Webhook (SUBMIT_STAGING_REQUEST)"]
+    subgraph Client["1. Client Dashboard (/concierge)"]
+        PROPOSAL["Client Generates Staging Diff"] --> CHECK_RISK{"High-Impact / Risk Check?"}
+        CHECK_RISK -->|Standard Update| STAGE_NORMAL["Stage as PENDING_REVIEW"]
+        CHECK_RISK -->|Significant / High Risk| STAGE_2STEP["Flag as REQUIRES_2STEP<br/>(Client Warned: Phone Verification Required)"]
+        STAGE_NORMAL & STAGE_2STEP --> POST_WEBHOOK["POST Webhook to Google Apps Script<br/>(SUBMIT_STAGING_REQUEST)"]
     end
 
-    subgraph IngestionLayer["2. Webhook & Ingestion Layer (gas-drive-ingestion)"]
-        DISPATCH --> GAS["Google Apps Script Master Webhook (Code.js)"]
-        GAS --> SHEET["Append Row to 'Staging_Queue' Tab<br/>(Client Operational Spreadsheet)"]
-        GAS --> ALERT_ENGINE{"Alert Dispatch Engine"}
+    subgraph Backend["2. Webhook & Master Sheet Ledger"]
+        POST_WEBHOOK --> GAS["gas-drive-ingestion/Code.js"]
+        GAS --> SHEET["Append to 'Staging_Queue' Tab<br/>(Status: PENDING_REVIEW or REQUIRES_2STEP)"]
+        GAS --> EMAIL_DISPATCH["📧 Instant HTML Diff Email to agency@<br/>(Normal Alert or High-Priority 2-Step Alert)"]
     end
 
-    subgraph NotificationLayer["3. Multi-Channel Operator Alerts"]
-        ALERT_ENGINE -->|Instant Dispatch| EMAIL["📧 High-Priority HTML Email<br/>(To: agency@eyeofruenterprisesllc.com)"]
-        ALERT_ENGINE -->|Optional Webhook| CHAT["💬 Real-Time Webhook<br/>(Slack / Discord / Telegram Dev Channel)"]
-        ALERT_ENGINE -->|Calendar / Daily Digest| DIGEST["📅 Morning Operational Rollup (Pending Items)"]
+    subgraph Operator["3. Antigravity Triage (Sync-StagingQueue.ps1)"]
+        EMAIL_DISPATCH --> NOTIFY["Operator Receives Email"]
+        NOTIFY --> CLI["Operator Runs Sync-StagingQueue.ps1"]
+        CLI --> REVIEW{"Triage Action"}
+        REVIEW -->|Standard Approve| APPLY["Apply Patch & Build Test"]
+        REVIEW -->|Flag 2-Step| CALL_CLIENT["Mark REQUIRES_2STEP<br/>Agency Calls Client to Confirm"]
+        REVIEW -->|Reject| DECLINE["Mark REJECTED with Reason"]
+        APPLY --> DEPLOY["Deploy to Cloudflare Pages"]
+        DEPLOY --> MARK_DEPLOYED["Update Status to DEPLOYED in Sheet"]
     end
 
-    subgraph ApprovalLayer["4. Antigravity Ingestion & Deployment"]
-        EMAIL & CHAT -->|Click Review Action Link| AGY_INTAKE["Antigravity Operator CLI / Task<br/>(Sync-StagingQueue.ps1)"]
-        AGY_INTAKE --> GIT_PATCH["Generate Git Branch / Pull Request"]
-        GIT_PATCH --> OPERATOR_APPROVAL{"Operator Review & Verification"}
-        OPERATOR_APPROVAL -->|Approved| CF_DEPLOY["Deploy to Cloudflare Pages"]
-        OPERATOR_APPROVAL -->|Rejected / Revisions| CLIENT_FEEDBACK["Notify Client of Feedback"]
+    subgraph Feedback["4. Loop Closure & Telemetry"]
+        MARK_DEPLOYED --> CLIENT_EMAIL["📧 Confirmation Email to Client<br/>'Your Update is Live on Production'"]
+        MARK_DEPLOYED & DECLINE & CALL_CLIENT --> LIVE_CONCIERGE["Concierge Dashboard Reflects Live Stage<br/>(Syncs real statuses in Agency Queue table)"]
     end
 ```
 
 ---
 
-## 2. Notification Dispatch Channels & Architecture
+## 2. Risk Heuristics & 2-Step Verification System
 
-To satisfy both immediate situational awareness and asynchronous triage, we specify a **three-tier alert architecture**:
+To protect client businesses against accidental misconfigurations, unauthorized employee submissions, or critical disruptions:
 
-| Channel | Trigger Velocity | Recipient | Content Payload | Action Pathway |
-| :--- | :--- | :--- | :--- | :--- |
-| **Tier 1: Sovereign Email Dispatch** *(Primary)* | Immediate (< 3s) | `agency@eyeofruenterprisesllc.com` | High-contrast visual HTML diff table, client rationale, target section/field, submission metadata | One-click button to Google Sheet, one-click Antigravity intake terminal command |
-| **Tier 2: Real-Time Chat Webhook** *(Secondary)* | Immediate (< 1s) | Discord / Slack / Telegram internal channel | Formatted markdown embed with colored status indicator, client name, and change summary | Link to sheet & review queue |
-| **Tier 3: Daily Queue Digest / Rollup** *(Fail-Safe)* | Scheduled (08:00 EST daily) | Studio Executive Inbox | Digest of any items still in `PENDING_REVIEW` state over 12 hours old | Summary of unresolved queues across all client ventures |
+### A. Automatic Risk Heuristic Triggers
+The Concierge and Webhook evaluate the submission against high-impact heuristics:
+* **Financial & Pricing Changes**: Hourly rates, package fees, retainers, pricing disclaimers.
+* **Operating Hours Disruption**: Schedule cuts greater than 50% or marked as "Closed indefinitely".
+* **Contact & Telemetry Routing**: Phone numbers, inquiry notification emails, physical business addresses.
+* **Structural Architecture**: Deleting entire portfolio items, major headline overhauls, or code diffs exceeding 500 characters.
+
+### B. Status Lifecycle
+| Status Code | Badge Color | Meaning & Operator Protocol |
+| :--- | :--- | :--- |
+| `PENDING_REVIEW` | Amber (`#f59e0b`) | Standard proposal queued. Normal engineering review in Antigravity. |
+| `UNDER_REVIEW` | Indigo (`#6366f1`) | Operator is currently evaluating code compatibility or design impact. |
+| `REQUIRES_2STEP` | Rose / Alert (`#f43f5e`) | High-impact modification. Operator must contact business owner via verified phone call before releasing. |
+| `DEPLOYED` | Emerald (`#10b981`) | Verified, tested, and live on Cloudflare Pages production. |
+| `REJECTED` | Muted Red (`#94a3b8`) | Discarded with feedback logged in the sheet. |
 
 ---
 
-## 3. High-Priority Email Notification Design (`agency@`)
+## 3. High-Priority Email Notification Specification
 
-The primary alert channel uses Google Apps Script's native `sendAgencyEmail` mechanism (sent from `agency@eyeofruenterprisesllc.com`). 
+Dispatched via `sendAgencyEmail` from `agency@eyeofruenterprisesllc.com`:
 
-### Email Specification
-* **Subject Format**:  
+* **Standard Subject**:  
   `[STAGING APPROVAL REQUIRED] {Client Name} — {Target Section} ({Field})`
-* **Preheader**:  
-  `New site adjustment staged by {Client Name} awaiting Antigravity operator approval.`
-* **Visual Diff Embed**:  
-  A custom inline CSS card rendering the **Current Baseline** in soft crimson (`#ef4444`) and the **Proposed Modification** in emerald (`#10b981`), mirroring the Concierge UI.
-* **Direct Operator Actions**:
-  1. **"Inspect in Google Sheet"** (Direct link to the client's `Staging_Queue` tab).
-  2. **"Open Client Concierge"** (Direct inspection on live site).
-  3. **"Antigravity CLI Command"** (Pre-formatted copyable command to fetch and stage the change locally).
+* **2-Step Verification Subject**:  
+  `🚨 [ACTION REQUIRED: 2-STEP CLIENT CALL] {Client Name} — {Target Section} ({Field})`
+* **Diff Preview**:
+  - Embedded side-by-side HTML comparison (Current Baseline vs. Proposed Value).
+  - Prominent banner if flagged for 2-step verification:  
+    `⚠️ SENSITIVE CHANGE DETECTED: Agency phone confirmation with authorized client required prior to release.`
+* **Metadata**: Client name, target section, field, submitter identity, timestamp, client prompt/rationale.
+* **Direct Links**: Link to client Google Sheet `Staging_Queue` tab + Concierge inspector.
 
 ---
 
-## 4. Google Apps Script Webhook Pipeline (`gas-drive-ingestion/Code.js`)
+## 4. Concierge Panel Dynamic Stage Reflection (`concierge.html`)
 
-To implement this notification architecture, we update `gas-drive-ingestion/Code.js` to add the dedicated `SUBMIT_STAGING_REQUEST` (and backward-compatible `STAGE_UPDATE`) handler.
+Currently, `concierge.html` displays hardcoded placeholder rows in the **Agency Queue** table.
 
-### Ingestion Logic:
-1. **Extract & Sanitize Payload**:
-   * `clientName` (or `clientId`)
-   * `targetSection` (e.g. `Header Navigation`, `Operating Schedule`, `Ventures Catalog`, `Hero Section`)
-   * `field` (e.g. `Branding Title & Visual Effects`, `Friday Hours`, `New Venture Title`)
-   * `currentValue`
-   * `proposedValue`
-   * `clientRationale`
-   * `submittedBy` (client email or operator ID)
-2. **Append to `Staging_Queue` Tab**:
-   * Columns: `[Timestamp, Client Name, Target Section, Field, Current Value, Proposed Value, Status, Client Rationale, Submitted By, Approval Notes]`
-   * Default Status: `PENDING_REVIEW`
-3. **Trigger Email Notification**:
-   * Calls `sendAgencyEmail(...)` to dispatch the formatted HTML notification.
-4. **Trigger Optional Chat Webhook**:
-   * If a Discord/Slack webhook URL is stored in Script Properties (`CHAT_WEBHOOK_URL`), dispatches an instant JSON payload with embed.
-5. **Return Operational Response**:
-   * Returns `{ status: "SUCCESS", queueId: "...", spreadsheetUrl: "..." }`.
+### Upgrades:
+1. **Dynamic Queue Fetching**:
+   - On initial page load (and on "Force Sync ↻"), `concierge.html` calls the webhook:  
+     `GET ?action=GET_STAGING_QUEUE&clientName={Client Name}`
+   - Renders the live rows with color-coded status badges:
+     - `PENDING_REVIEW` (amber)
+     - `UNDER_REVIEW` (blue/indigo)
+     - `REQUIRES_2STEP` (rose with phone icon)
+     - `DEPLOYED` (emerald checkmark)
+     - `REJECTED` (gray)
+2. **Immediate Local Stage Optimistic Update**:
+   - When the user pushes to queue, it immediately appends with `PENDING_REVIEW` (or `REQUIRES_2STEP` if flagged by heuristics) with an active pulse indicator.
+3. **High-Impact Caution Toast**:
+   - If the proposal was flagged as high-impact, display an informational warning:  
+     *"Proposal staged. Due to the sensitive nature of this update, agency engineering will conduct a 2-step verification call before publishing."*
 
 ---
 
-## 5. Antigravity Local Operator Workflow (`Sync-StagingQueue.ps1`)
+## 5. Local Antigravity Operator Tooling (`Sync-StagingQueue.ps1`)
 
-To bridge the air-gap into local development and verification:
+A native PowerShell operator script located at `scripts/Sync-StagingQueue.ps1`:
 
-1. **PowerShell Sync Script** (`scripts/Sync-StagingQueue.ps1`):
-   * Queries the webhook via `action: "GET_STAGING_QUEUE"`.
-   * Displays all `PENDING_REVIEW` items in terminal with colorized diffs.
-   * Prompts the operator: `[A]pprove & Apply Patch | [R]eject | [S]kip`.
-2. **Patch Application**:
-   * If approved, Antigravity generates a feature branch (`stage/client-update-{timestamp}`) and replaces target code in `index.html` or target content files.
-   * Runs local preflight validation (`npm run build`).
-   * Marks the row in Google Sheet as `VERIFIED` or `DEPLOYED`.
-3. **Closing the Loop (Client Notification)**:
-   * Once deployed to Cloudflare Pages, a webhook or email can notify the client:
-     *"Your requested adjustment has been approved and deployed to production."*
-
----
-
-## 6. Implementation Phases & Milestones
-
-```mermaid
-timeline
-    title Implementation Roadmap
-    Phase 1 : Webhook Route Implementation : Add SUBMIT_STAGING_REQUEST in Code.js : Enhance Staging_Queue tab columns
-    Phase 2 : High-Priority Email Template : Build HTML diff template : Configure agency@ alert dispatch
-    Phase 3 : Concierge UI Alignment : Standardize payload in concierge.html : Connect toast status with webhook response
-    Phase 4 : Antigravity Operator Tooling : Author Sync-StagingQueue.ps1 : Test full-cycle intake, verification & deploy
+### Operator Command Interface:
+```powershell
+.\scripts\Sync-StagingQueue.ps1 -Client "Eye Of Ru Enterprises"
 ```
+
+### Capabilities:
+1. **Pulls Queue**: Fetches all rows from `Staging_Queue` via webhook.
+2. **Interactive Terminal Diff**: Renders current vs. proposed values with ANSI color highlights.
+3. **Interactive Menu**:
+   - `[A] Approve & Apply`: Updates local files, creates branch, runs `npm run build`, marks status as `DEPLOYED` via webhook.
+   - `[2] Flag 2-Step`: Updates status to `REQUIRES_2STEP` and prompts for operator verification notes.
+   - `[U] Mark Under Review`: Updates status to `UNDER_REVIEW`.
+   - `[R] Reject`: Updates status to `REJECTED` and inputs rejection rationale.
+   - `[S] Skip`: Continues to next item.
+4. **Client Notification Trigger**:
+   - Upon marking `DEPLOYED`, automatically triggers client confirmation email.
+
+---
+
+## 6. Execution Roadmap & Tasks
+
+1. **Step 1: Webhook Update (`gas-drive-ingestion/Code.js`)**:
+   - Implement `SUBMIT_STAGING_REQUEST` and `GET_STAGING_QUEUE` actions.
+   - Implement `UPDATE_STAGING_STATUS` action.
+   - Add risk-heuristic auto-detection (`REQUIRES_2STEP`).
+   - Implement email dispatch with standard & 2-step alert templates.
+   - Implement client deployment confirmation email dispatch.
+2. **Step 2: Concierge UI Upgrade (`concierge.html`)**:
+   - Update `approveDiff()` to dispatch structured payload and detect sensitive updates.
+   - Implement `loadStagingQueue()` to fetch and render live stages dynamically from Google Sheet.
+   - Wire "Force Sync ↻" button to refresh live queue.
+3. **Step 3: Operator Script Authoring (`scripts/Sync-StagingQueue.ps1`)**:
+   - Create interactive PowerShell intake and triage utility.
+4. **Step 4: End-to-End Testing & Verification**:
+   - Test standard change submission.
+   - Test sensitive/high-risk change (triggers 2-step alert).
+   - Test queue refresh in `concierge.html`.

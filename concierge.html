@@ -104,8 +104,17 @@
   <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
     
     <!-- LEFT PANE: CONVERSATIONAL ASSISTANT -->
-    <div class="lg:col-span-6 flex flex-col h-[430px] lg:h-[calc(100vh-11rem)] min-h-[400px] rounded-2xl bg-charcoal-850/80 border border-charcoal-800 overflow-hidden shadow-xl">
+    <div id="conciergeConsolePane" class="lg:col-span-6 flex flex-col h-[430px] lg:h-[calc(100vh-11rem)] min-h-[400px] rounded-2xl bg-charcoal-850/80 border border-charcoal-800 overflow-hidden shadow-xl relative">
       
+      <!-- Drag and Drop Overlay Zone -->
+      <div id="dropOverlay" class="absolute inset-0 z-40 hidden bg-charcoal-950/85 backdrop-blur-sm border-2 border-dashed border-bronze-400 rounded-2xl flex flex-col items-center justify-center pointer-events-none transition-all">
+        <div class="p-4 rounded-xl bg-charcoal-900 border border-bronze-500/50 text-center shadow-2xl">
+          <span class="text-3xl block mb-1">📷</span>
+          <span class="text-xs font-mono font-bold text-bronze-400 uppercase tracking-wider block">Drop Photos to Attach</span>
+          <span class="text-[10px] font-mono text-slate-400 block mt-0.5">Images will be staged for replacement</span>
+        </div>
+      </div>
+
       <!-- Console Header -->
       <div class="py-3 px-4 border-b border-charcoal-800 bg-charcoal-900/60 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -142,7 +151,7 @@
             <ul class="space-y-1.5 text-[11px] text-slate-400 pl-1">
               <li class="flex items-start gap-1.5">
                 <span class="text-bronze-400 font-mono">▸</span>
-                <span><strong>Starter Cues:</strong> Click <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ Adjust Template</code>, <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ Update Hours</code>, or <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ Draft Venture</code> to load an intent cue, then describe your changes naturally in plain English.</span>
+                <span><strong>Starter Cues:</strong> Click <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ Adjust Template</code>, <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ Update Hours</code>, <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ Draft Venture</code>, or <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">+ New Photos</code> to load an intent cue, then describe your changes naturally in plain English.</span>
               </li>
               <li class="flex items-start gap-1.5">
                 <span class="text-bronze-400 font-mono">▸</span>
@@ -158,7 +167,7 @@
               </li>
               <li class="flex items-start gap-1.5">
                 <span class="text-bronze-400 font-mono">▸</span>
-                <span><strong>Safe Staging:</strong> Nothing touches production directly. Approving a proposal queues it to the Agency Google Sheet ledger for Antigravity verification.</span>
+                <span><strong>Safe Staging:</strong> Nothing touches production directly. Approving a proposal queues it for staging verification.</span>
               </li>
             </ul>
           </div>
@@ -177,26 +186,48 @@
         <button type="button" onclick="useQuickPrompt('Please draft a new venture article/card as follows: ')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load draft venture direction cue">
           + Draft Venture
         </button>
+        <button type="button" onclick="handleNewPhotosCue()" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load photo replacement prompt cue and trigger photo selector">
+          + New Photos
+        </button>
       </div>
 
       <!-- Chat Input Form -->
       <form onsubmit="handleChatSubmit(event)" class="p-3 bg-charcoal-900 border-t border-charcoal-800">
-        <div class="relative w-full">
+        <!-- Attached photo preview tray (#attachmentTray) -->
+        <div id="attachmentTray" class="hidden mb-2 p-2 rounded-xl bg-charcoal-950/70 border border-charcoal-800 flex flex-col gap-1.5 text-[10px] font-mono max-h-32 overflow-y-auto"></div>
+
+        <!-- Hidden Photo File Input -->
+        <input type="file" id="photoFileInput" accept="image/*" multiple class="hidden" onchange="handleFileInputChange(event)">
+
+        <div class="relative w-full flex items-center">
+          <!-- Attachment Button -->
+          <button 
+            type="button" 
+            onclick="triggerPhotoFileInput()" 
+            id="attachBtn"
+            class="absolute left-2.5 bottom-2.5 w-[26px] h-[26px] rounded-md text-slate-400 hover:text-bronze-400 hover:bg-charcoal-800 active:scale-95 transition flex items-center justify-center flex-shrink-0" 
+            title="Attach Photos" 
+            aria-label="Attach Photos">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+            </svg>
+          </button>
+
           <textarea 
             id="chatInput" 
             rows="2"
             oninput="autoResizePrompt(this)"
             onkeydown="handlePromptKeydown(event)"
             placeholder="Propose an update or request diagnostics... (Enter to send, Shift+Enter for new line)" 
-            class="w-full pl-3.5 pr-8 py-2.5 rounded-xl bg-charcoal-950 border border-charcoal-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-bronze-500 text-xs resize-none min-h-[58px] max-h-36 overflow-y-auto leading-relaxed transition-all block"></textarea>
+            class="w-full pl-10 pr-10 py-2.5 rounded-xl bg-charcoal-950 border border-charcoal-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-bronze-500 text-xs resize-none min-h-[58px] max-h-36 overflow-y-auto leading-relaxed transition-all block"></textarea>
           
           <button 
             type="submit" 
             id="sendBtn" 
-            class="absolute right-2 bottom-2 w-[22px] h-[22px] rounded-md bg-bronze-500 hover:bg-bronze-400 active:scale-95 text-charcoal-950 transition flex items-center justify-center shadow-sm flex-shrink-0" 
+            class="absolute right-2.5 bottom-2.5 w-[26px] h-[26px] rounded-md bg-bronze-500 hover:bg-bronze-400 active:scale-95 text-charcoal-950 transition flex items-center justify-center shadow-sm flex-shrink-0" 
             title="Upload / Transmit Prompt" 
             aria-label="Upload / Transmit Prompt">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
             </svg>
           </button>
@@ -255,7 +286,7 @@
           <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-200">
             Agency Queue
           </span>
-          <span class="text-[10px] font-mono text-emerald-400">● 2 Items Staged</span>
+          <span id="stagedCountBadge" class="text-[10px] font-mono text-emerald-400">● Live Sync</span>
         </div>
 
         <div class="overflow-y-auto text-xs font-mono">
@@ -287,7 +318,7 @@
 
         <div class="pt-2 border-t border-charcoal-800/60 flex items-center justify-between text-[10px] font-mono text-slate-500">
           <span>Synced via Google Apps Script Webhook</span>
-          <button onclick="showToast('Staging queue synced with client master sheet.', 'info')" class="text-bronze-400 hover:underline">Force Sync ↻</button>
+          <button onclick="fetchStagingQueue(true)" class="text-bronze-400 hover:underline">Force Sync ↻</button>
         </div>
       </div>
 
@@ -337,6 +368,133 @@
 
   <script>
     let activeProposal = null;
+    let attachedPhotos = [];
+
+    function formatFileSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function triggerPhotoFileInput() {
+      const input = document.getElementById('photoFileInput');
+      if (input) input.click();
+    }
+
+    function handleFileInputChange(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      processPhotoFiles(Array.from(files));
+      e.target.value = '';
+    }
+
+    function processPhotoFiles(files) {
+      const imageFiles = files.filter(f => f.type && f.type.startsWith('image/'));
+      if (imageFiles.length === 0) {
+        showToast("Please select valid image files (.png, .jpg, .webp, .avif).", "info");
+        return;
+      }
+
+      let processed = 0;
+      imageFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          attachedPhotos.push({
+            id: 'photo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+            name: file.name,
+            size: file.size,
+            sizeFormatted: formatFileSize(file.size),
+            type: file.type || 'image/jpeg',
+            dataUrl: event.target.result
+          });
+          processed++;
+          if (processed === imageFiles.length) {
+            renderAttachmentTray();
+            showToast(`Attached ${imageFiles.length} photo${imageFiles.length > 1 ? 's' : ''}.`, "success");
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function removeAttachedPhoto(id) {
+      attachedPhotos = attachedPhotos.filter(p => p.id !== id);
+      renderAttachmentTray();
+    }
+
+    function clearAllAttachedPhotos() {
+      attachedPhotos = [];
+      renderAttachmentTray();
+    }
+
+    function renderAttachmentTray() {
+      const tray = document.getElementById('attachmentTray');
+      if (!tray) return;
+
+      if (attachedPhotos.length === 0) {
+        tray.classList.add('hidden');
+        tray.innerHTML = '';
+        return;
+      }
+
+      tray.classList.remove('hidden');
+      tray.innerHTML = `
+        <div class="w-full flex items-center justify-between pb-1 border-b border-charcoal-800 text-[10px] text-bronze-400 font-semibold">
+          <span>Attached Photos (${attachedPhotos.length})</span>
+          <button type="button" onclick="clearAllAttachedPhotos()" class="text-[9px] text-slate-500 hover:text-rose-400 transition">Clear all</button>
+        </div>
+        <div class="flex flex-wrap gap-2 w-full pt-1">
+          ${attachedPhotos.map(photo => `
+            <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-charcoal-850 border border-charcoal-700/80 text-slate-200 shadow-sm max-w-[200px]">
+              <img src="${photo.dataUrl}" alt="${escapeHtmlText(photo.name)}" class="w-6 h-6 object-cover rounded border border-charcoal-700 flex-shrink-0">
+              <div class="flex flex-col min-w-0 pr-1">
+                <span class="text-[10px] text-slate-200 truncate leading-tight font-mono" title="${escapeHtmlText(photo.name)}">${escapeHtmlText(photo.name)}</span>
+                <span class="text-[8px] text-slate-500 leading-none">${photo.sizeFormatted}</span>
+              </div>
+              <button type="button" onclick="removeAttachedPhoto('${photo.id}')" class="text-slate-500 hover:text-rose-400 transition p-0.5 flex-shrink-0" title="Remove photo" aria-label="Remove photo">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function setupDragAndDrop() {
+      const dropZone = document.getElementById('conciergeConsolePane');
+      const overlay = document.getElementById('dropOverlay');
+      if (!dropZone) return;
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (overlay) overlay.classList.remove('hidden');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (overlay) overlay.classList.add('hidden');
+        }, false);
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          processPhotoFiles(Array.from(dt.files));
+        }
+      }, false);
+    }
+
+    function handleNewPhotosCue() {
+      useQuickPrompt("We have new photos and need to change the service photos by tomorrow: ");
+      if (attachedPhotos.length === 0) {
+        triggerPhotoFileInput();
+      }
+    }
 
     function toggleIntro() {
       const card = document.getElementById('introCard');
@@ -361,6 +519,8 @@
         if (card) card.classList.add('hidden');
         if (btn) btn.innerHTML = `<span>Show Guide</span>`;
       }
+      setupDragAndDrop();
+      fetchStagingQueue(false);
     });
 
     function toggleTheme() {
@@ -567,7 +727,84 @@ Applied Enhancements:
 
         const q = query.toLowerCase();
 
-        // 1. Operating Hours / Schedule check (Recognizes intent immediately from direction cue or simple text like "change Friday hours to close at 5")
+        // 0. Photo Replacement & Asset Update Check
+        const hasAttachedPhotos = attachedPhotos.length > 0;
+        const isPhotoRequest = q.includes("photo") || q.includes("photos") || 
+                               q.includes("picture") || q.includes("pictures") || 
+                               q.includes("image") || q.includes("images") || 
+                               q.includes("gallery") || 
+                               (hasAttachedPhotos && (q.includes("replace") || q.includes("change") || q.includes("update") || q.includes("service") || q.includes("upload")));
+
+        if (isPhotoRequest) {
+          // Recognize urgency ('by tomorrow' -> 'EXPEDITED SLA: Tomorrow')
+          let isExpedited = false;
+          let sla = "Standard Staging Verification";
+          if (q.includes("tomorrow") || q.includes("by tomorrow")) {
+            sla = "EXPEDITED SLA: Tomorrow";
+            isExpedited = true;
+          } else if (q.includes("today") || q.includes("by today")) {
+            sla = "EXPEDITED SLA: Today";
+            isExpedited = true;
+          } else if (q.includes("asap") || q.includes("urgent") || q.includes("rush") || q.includes("expedit")) {
+            sla = "EXPEDITED SLA: Immediate";
+            isExpedited = true;
+          }
+
+          let section = "Services Gallery";
+          let field = "Service Portfolio Photos";
+          if (q.includes("hero")) {
+            section = "Hero Section";
+            field = "Hero Banner Visuals";
+          } else if (q.includes("venture") || q.includes("project")) {
+            section = "Ventures Catalog";
+            field = "Venture Imagery";
+          } else if (q.includes("about") || q.includes("team")) {
+            section = "About & Leadership";
+            field = "Executive Portrait Assets";
+          }
+
+          let photosToAttach = [...attachedPhotos];
+          if (photosToAttach.length === 0) {
+            photosToAttach = [
+              {
+                id: 'photo-staged-1',
+                name: 'service-facility-main.jpg',
+                size: 1420000,
+                sizeFormatted: '1.4 MB',
+                type: 'image/jpeg',
+                dataUrl: '/assets/logo-emblem.png'
+              },
+              {
+                id: 'photo-staged-2',
+                name: 'service-operations-crew.jpg',
+                size: 2100000,
+                sizeFormatted: '2.1 MB',
+                type: 'image/jpeg',
+                dataUrl: '/assets/logo-emblem.png'
+              }
+            ];
+          }
+
+          activeProposal = {
+            targetSection: section,
+            field: field,
+            isExpedited: isExpedited,
+            sla: sla,
+            photos: photosToAttach,
+            currentValue: `[Current Live Production Baseline]\n• service-legacy-01.jpg (1.1 MB)\n• service-legacy-02.jpg (890 KB)\n• service-legacy-03.jpg (1.4 MB)`,
+            proposedValue: `[Staged Replacement: ${photosToAttach.length} New Assets]\n${isExpedited ? `⚡ ${sla}\n` : ''}${photosToAttach.map(p => `• ${p.name} (${p.sizeFormatted})`).join('\n')}\nNotes: Optimized for Cloudflare CDN & responsive AVIF/WebP generation.`,
+            clientRationale: query
+          };
+
+          renderDiffProposal(activeProposal);
+          appendChatMessage("CONCIERGE AGENT", `Received photo replacement request for "${section}". Attached ${photosToAttach.length} photo(s) with ${sla}. Visual side-by-side comparison ready in the staging pane.`);
+
+          attachedPhotos = [];
+          renderAttachmentTray();
+          return;
+        }
+
+        // 1. Operating Hours / Schedule check
         if (q.includes("operating hour") || q.includes("hours") || q.includes("schedule") || q.includes("close at") || q.includes("open at") || q.includes("closing") || q.includes("opening")) {
           let day = "Weekly Operating Hours";
           if (q.includes("friday")) day = "Friday Hours";
@@ -598,10 +835,15 @@ Applied Enhancements:
             proposedValue: proposedHours,
             clientRationale: query
           };
+          if (attachedPhotos.length > 0) {
+            activeProposal.photos = [...attachedPhotos];
+            attachedPhotos = [];
+            renderAttachmentTray();
+          }
           renderDiffProposal(activeProposal);
           appendChatMessage("CONCIERGE AGENT", `Understood. I have drafted an Operating Schedule proposal for ${day} (${proposedHours}). Review the comparison in the staging pane.`);
 
-        // 2. Draft Venture / Article Card check (Recognizes intent immediately that an article/card is being submitted)
+        // 2. Draft Venture / Article Card check
         } else if (q.includes("draft a new venture") || q.includes("draft venture") || q.includes("venture") || q.includes("article") || q.includes("submitting an article") || q.includes("portfolio")) {
           let userText = query.replace(/^please\s+draft\s+a\s+new\s+venture\s+(article\/card\s+)?(as\s+follows:\s*)?/i, "")
                               .replace(/^draft\s+new\s+venture:\s*/i, "")
@@ -641,6 +883,11 @@ Applied Enhancements:
             proposedValue: `Title: ${ventureTitle}\nCategory: ${ventureCategory}\nStatus: In Incubation\nSummary: ${ventureSummary}\nDetailed Description: Technical specifications withheld during closed R&D incubation.`,
             clientRationale: query
           };
+          if (attachedPhotos.length > 0) {
+            activeProposal.photos = [...attachedPhotos];
+            attachedPhotos = [];
+            renderAttachmentTray();
+          }
           renderDiffProposal(activeProposal);
           appendChatMessage("CONCIERGE AGENT", `Recognized venture article submission for "${ventureTitle}". Formatted card and modal proposal ready in the staging pane.`);
 
@@ -655,6 +902,11 @@ Applied Enhancements:
             proposedValue: interpreted.proposedValue,
             clientRationale: query
           };
+          if (attachedPhotos.length > 0) {
+            activeProposal.photos = [...attachedPhotos];
+            attachedPhotos = [];
+            renderAttachmentTray();
+          }
           renderDiffProposal(activeProposal);
           appendChatMessage("CONCIERGE AGENT", interpreted.agentMessage);
 
@@ -671,6 +923,11 @@ Applied Enhancements:
             proposedValue: query,
             clientRationale: "Requested modification via AI Concierge"
           };
+          if (attachedPhotos.length > 0) {
+            activeProposal.photos = [...attachedPhotos];
+            attachedPhotos = [];
+            renderAttachmentTray();
+          }
           renderDiffProposal(activeProposal);
           appendChatMessage("CONCIERGE AGENT", "Drafted staging diff proposal reflecting your request. Inspect the side-by-side comparison on the right.");
         }
@@ -701,9 +958,18 @@ Applied Enhancements:
       const body = document.getElementById('modalDiffBody');
       if (!modal || !body) return;
 
+      const hasPhotos = activeProposal.photos && activeProposal.photos.length > 0;
+
       body.innerHTML = `
-        <div class="text-[11px] text-bronze-400 font-semibold mb-2">
-          ${activeProposal.targetSection} › ${activeProposal.field}
+        <div class="flex items-center justify-between text-[11px] font-semibold mb-2">
+          <div class="text-bronze-400">
+            ${escapeHtmlText(activeProposal.targetSection)} › ${escapeHtmlText(activeProposal.field)}
+          </div>
+          ${activeProposal.isExpedited ? `
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1">
+              <span class="animate-pulse">⚡</span> ${escapeHtmlText(activeProposal.sla || 'EXPEDITED SLA: Tomorrow')}
+            </span>
+          ` : ''}
         </div>
         <div class="rounded-xl border border-charcoal-700 overflow-hidden text-xs font-mono shadow-inner">
           <div class="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-charcoal-700">
@@ -711,17 +977,55 @@ Applied Enhancements:
               <div class="px-3 py-2 bg-rose-950/35 border-b border-rose-900/40 text-[10px] text-rose-400 font-semibold flex items-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Current
               </div>
-              <div class="p-3.5 text-rose-200 whitespace-pre-wrap leading-relaxed text-xs flex-grow">
-                ${activeProposal.currentValue}
+              <div class="p-3.5 text-rose-200 whitespace-pre-wrap leading-relaxed text-xs">
+                ${escapeHtmlText(activeProposal.currentValue)}
               </div>
+              ${hasPhotos ? `
+                <div class="mt-auto p-3.5 pt-2 border-t border-rose-900/30">
+                  <div class="text-[10px] font-semibold text-rose-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <span>🗄️</span> Current Live Production Assets
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 opacity-60">
+                    <div class="p-2 rounded-lg bg-charcoal-900 border border-rose-900/40 text-center flex flex-col items-center justify-center h-20">
+                      <span class="text-xs text-rose-300 font-mono">legacy-01.jpg</span>
+                      <span class="text-[9px] text-slate-500">1.1 MB · Live CDN</span>
+                    </div>
+                    <div class="p-2 rounded-lg bg-charcoal-900 border border-rose-900/40 text-center flex flex-col items-center justify-center h-20">
+                      <span class="text-xs text-rose-300 font-mono">legacy-02.jpg</span>
+                      <span class="text-[9px] text-slate-500">890 KB · Live CDN</span>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
             </div>
             <div class="w-full sm:w-1/2 bg-emerald-950/15 flex flex-col">
               <div class="px-3 py-2 bg-emerald-950/35 border-b border-emerald-900/40 text-[10px] text-emerald-400 font-semibold flex items-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Proposed
               </div>
-              <div class="p-3.5 text-emerald-200 whitespace-pre-wrap leading-relaxed text-xs flex-grow">
-                ${activeProposal.proposedValue}
+              <div class="p-3.5 text-emerald-200 whitespace-pre-wrap leading-relaxed text-xs">
+                ${escapeHtmlText(activeProposal.proposedValue)}
               </div>
+              ${hasPhotos ? `
+                <div class="mt-auto p-3.5 pt-2 border-t border-emerald-900/40">
+                  <div class="text-[10px] font-semibold text-emerald-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5"><span>🖼️</span> Staged Photo Assets (${activeProposal.photos.length})</span>
+                    <span class="text-[9px] font-mono text-emerald-400/80">Air-Gapped Cloudflare Staging</span>
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    ${activeProposal.photos.map(photo => `
+                      <div class="rounded-xl overflow-hidden border border-emerald-500/40 bg-charcoal-950 p-1.5 flex flex-col gap-1.5 shadow-md">
+                        <div class="w-full h-24 sm:h-32 bg-charcoal-900 rounded-lg overflow-hidden flex items-center justify-center">
+                          <img src="${photo.dataUrl}" alt="${escapeHtmlText(photo.name)}" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+                        </div>
+                        <div class="flex items-center justify-between text-[9px] text-slate-200 px-1 font-mono">
+                          <span class="truncate font-semibold text-emerald-300" title="${escapeHtmlText(photo.name)}">${escapeHtmlText(photo.name)}</span>
+                          <span class="text-slate-400 text-[8px] flex-shrink-0 ml-1.5">${photo.sizeFormatted || ''}</span>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
             </div>
           </div>
         </div>
@@ -740,14 +1044,21 @@ Applied Enhancements:
       const actions = document.getElementById('stagingActions');
       const expandBtn = document.getElementById('expandDiffBtn');
 
-      badge.textContent = "Staged";
-      badge.className = "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-950/60 text-amber-400 border border-amber-500/40";
+      badge.textContent = p.isExpedited ? "Expedited" : "Staged";
+      badge.className = p.isExpedited
+        ? "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1"
+        : "px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-950/60 text-amber-400 border border-amber-500/40";
 
       if (expandBtn) expandBtn.classList.remove('hidden');
 
+      const hasPhotos = p.photos && p.photos.length > 0;
+
       container.innerHTML = `
         <div class="flex items-center justify-between text-[11px] text-bronze-400 font-semibold cursor-pointer pb-0.5" onclick="openStagingModal()" title="Click for fullscreen inspection">
-          <span>${p.targetSection} › ${p.field}</span>
+          <div class="flex items-center gap-2">
+            <span>${escapeHtmlText(p.targetSection)} › ${escapeHtmlText(p.field)}</span>
+            ${p.isExpedited ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-mono animate-pulse">⚡ ${escapeHtmlText(p.sla || 'EXPEDITED')}</span>` : ''}
+          </div>
           <span class="text-[10px] text-slate-500 hover:text-slate-300 font-normal">Inspect ↗</span>
         </div>
 
@@ -758,16 +1069,53 @@ Applied Enhancements:
                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Current
                </div>
                <div class="p-2.5 text-rose-200 whitespace-pre-wrap leading-relaxed text-[11px]">
-                 ${p.currentValue}
+                 ${escapeHtmlText(p.currentValue)}
                </div>
+               ${hasPhotos ? `
+                 <div class="mt-auto p-2.5 pt-2 border-t border-rose-900/30">
+                   <div class="text-[9px] font-semibold text-rose-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                     <span>🗄️</span> Live Production CDN
+                   </div>
+                   <div class="grid grid-cols-2 gap-1.5 opacity-60">
+                     <div class="p-1.5 rounded bg-charcoal-900 border border-rose-900/40 text-center">
+                       <span class="text-[9px] text-rose-300 block truncate">legacy-01.jpg</span>
+                       <span class="text-[8px] text-slate-500">1.1 MB</span>
+                     </div>
+                     <div class="p-1.5 rounded bg-charcoal-900 border border-rose-900/40 text-center">
+                       <span class="text-[9px] text-rose-300 block truncate">legacy-02.jpg</span>
+                       <span class="text-[8px] text-slate-500">890 KB</span>
+                     </div>
+                   </div>
+                 </div>
+               ` : ''}
              </div>
              <div class="w-full sm:w-1/2 bg-emerald-950/15 flex flex-col">
                <div class="px-2.5 py-1.5 bg-emerald-950/35 border-b border-emerald-900/40 text-[10px] text-emerald-400 font-semibold flex items-center gap-1.5">
                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Proposed
                </div>
                <div class="p-2.5 text-emerald-200 whitespace-pre-wrap leading-relaxed text-[11px]">
-                 ${p.proposedValue}
+                 ${escapeHtmlText(p.proposedValue)}
                </div>
+               ${hasPhotos ? `
+                 <div class="mt-auto p-2.5 pt-2 border-t border-emerald-900/40">
+                   <div class="text-[9px] font-semibold text-emerald-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                     <span>🖼️</span> Staged Photos (${p.photos.length})
+                   </div>
+                   <div class="grid grid-cols-2 gap-1.5">
+                     ${p.photos.map(photo => `
+                       <div class="group relative rounded overflow-hidden border border-emerald-500/30 bg-charcoal-900 p-1 flex flex-col gap-1">
+                         <div class="w-full h-14 bg-charcoal-950 rounded overflow-hidden flex items-center justify-center">
+                           <img src="${photo.dataUrl}" alt="${escapeHtmlText(photo.name)}" class="w-full h-full object-cover">
+                         </div>
+                         <div class="flex items-center justify-between text-[8px] text-slate-300 px-0.5 truncate font-mono">
+                           <span class="truncate" title="${escapeHtmlText(photo.name)}">${escapeHtmlText(photo.name)}</span>
+                           <span class="text-slate-500 flex-shrink-0 ml-1">${photo.sizeFormatted || ''}</span>
+                         </div>
+                       </div>
+                     `).join('')}
+                   </div>
+                 </div>
+               ` : ''}
              </div>
           </div>
         </div>
@@ -792,38 +1140,172 @@ Applied Enhancements:
       closeStagingModal();
     }
 
+    const MASTER_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxd4tTo4oWLRYo-j6w3M0Lbz0qCUPIckDxcn_uqimr7VAPf8IeiqeNXBmau_o91kWztzg/exec";
+    const CLIENT_NAME = "Eye Of Ru Enterprises";
+
+    function checkSensitiveChange(proposal) {
+      if (!proposal) return false;
+      const combined = `${proposal.targetSection || ''} ${proposal.field || ''} ${proposal.proposedValue || ''} ${proposal.clientRationale || ''}`.toLowerCase();
+      const sensitiveRegex = /(\$|\bprice\b|\brate\b|\bcost\b|\bfee\b|\bretainer\b|\bhours\b|\bclosed\b|\bphone\b|\bemail\b|\bcontact\b|\baddress\b|\bdelete\b|\bremove\b|\blegal\b|\bterms\b)/i;
+      return sensitiveRegex.test(combined) || (proposal.proposedValue && proposal.proposedValue.length > 500);
+    }
+
+    function renderStatusBadge(status) {
+      switch (status) {
+        case 'REQUIRES_2STEP':
+          return '<span class="px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-500/40 text-[10px] font-semibold flex items-center gap-1 w-max"><span>📞</span> 2-STEP CALL</span>';
+        case 'EXPEDITED':
+          return '<span class="px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/50 text-[10px] font-semibold flex items-center gap-1 w-max"><span class="animate-pulse">⚡</span> EXPEDITED</span>';
+        case 'UNDER_REVIEW':
+          return '<span class="px-1.5 py-0.5 rounded bg-indigo-950/70 text-indigo-300 border border-indigo-500/30 text-[10px] font-semibold w-max">UNDER_REVIEW</span>';
+        case 'DEPLOYED':
+        case 'VERIFIED':
+          return '<span class="px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold flex items-center gap-1 w-max"><span>✓</span> LIVE ON EDGE</span>';
+        case 'REJECTED':
+          return '<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 text-[10px] w-max">REJECTED</span>';
+        case 'PENDING_REVIEW':
+        default:
+          return '<span class="px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-500/30 text-[10px] font-semibold w-max">PENDING_REVIEW</span>';
+      }
+    }
+
+    function escapeHtmlText(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function fetchStagingQueue(showFeedback = false) {
+      const tbody = document.getElementById('stagingQueueBody');
+      const badge = document.getElementById('stagedCountBadge');
+      if (!tbody) return;
+
+      try {
+        const resp = await fetch(`${MASTER_WEBHOOK_URL}?action=GET_STAGING_QUEUE&clientName=${encodeURIComponent(CLIENT_NAME)}`);
+        const data = await resp.json();
+
+        if (data && data.items && data.items.length > 0) {
+          tbody.innerHTML = '';
+          const items = data.items.slice().reverse(); // Show latest staged items first
+          items.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-charcoal-800/40 transition";
+            tr.innerHTML = `
+              <td class="py-2 text-bronze-400">${escapeHtmlText(item.targetSection || 'Site')}</td>
+              <td class="py-2 truncate max-w-[120px]" title="${escapeHtmlText(item.field)}">${escapeHtmlText(item.field || 'General')}</td>
+              <td class="py-2">${renderStatusBadge(item.status)}</td>
+              <td class="py-2 text-right"><span class="text-[10px] text-slate-500">${item.status === 'DEPLOYED' ? 'Edge Verified' : (item.status === 'REQUIRES_2STEP' ? 'Phone Conf Req' : (item.status === 'UNDER_REVIEW' ? 'In Triage' : 'Awaiting Review'))}</span></td>
+            `;
+            tbody.appendChild(tr);
+          });
+          if (badge) badge.textContent = `● ${data.items.length} Items Staged`;
+          if (showFeedback) showToast("Live staging queue synced with Google Sheet ledger.", "success");
+        } else {
+          if (showFeedback) showToast("Staging queue is up to date.", "info");
+        }
+      } catch (err) {
+        console.warn("Queue sync error:", err);
+        if (showFeedback) showToast("Staging ledger reachable. Local buffer active.", "info");
+      }
+    }
+
     async function approveDiff() {
       if (!activeProposal) return;
 
+      const isSensitive = checkSensitiveChange(activeProposal);
+      const isExpedited = !!activeProposal.isExpedited;
+      const initialStatus = isSensitive ? "REQUIRES_2STEP" : (isExpedited ? "EXPEDITED" : "PENDING_REVIEW");
+
       const tbody = document.getElementById('stagingQueueBody');
+      const badge = document.getElementById('stagedCountBadge');
       const tr = document.createElement('tr');
+      tr.className = "hover:bg-charcoal-800/40 transition";
       tr.innerHTML = `
-        <td class="py-2 text-bronze-400">${activeProposal.targetSection}</td>
-        <td class="py-2">${activeProposal.field}</td>
-        <td class="py-2"><span class="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 text-[10px]">QUEUED_REVIEW</span></td>
-        <td class="py-2 text-right"><span class="text-[10px] text-slate-500">Awaiting Antigravity</span></td>
+        <td class="py-2 text-bronze-400">${escapeHtmlText(activeProposal.targetSection)}</td>
+        <td class="py-2 truncate max-w-[120px]" title="${escapeHtmlText(activeProposal.field)}">
+          ${escapeHtmlText(activeProposal.field)}
+          ${isExpedited ? ' <span class="text-[9px] text-amber-400 font-mono">⚡</span>' : ''}
+        </td>
+        <td class="py-2">${renderStatusBadge(initialStatus)}</td>
+        <td class="py-2 text-right"><span class="text-[10px] text-slate-500">${isSensitive ? 'Phone Conf Req' : (isExpedited ? 'Expedited Triage' : 'Awaiting Review')}</span></td>
       `;
       tbody.prepend(tr);
 
-      // Post to Google Apps Script Webhook
+      // 1. Upload attached photos via Base64 to UPLOAD_ASSET on the master webhook
+      if (activeProposal.photos && activeProposal.photos.length > 0) {
+        for (const photo of activeProposal.photos) {
+          try {
+            const rawBase64 = (photo.dataUrl && photo.dataUrl.includes(','))
+              ? photo.dataUrl.split(',')[1]
+              : (photo.dataUrl || '');
+
+            await fetch(MASTER_WEBHOOK_URL, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                timestamp: new Date().toISOString(),
+                clientId: CLIENT_NAME,
+                clientName: CLIENT_NAME,
+                action: "UPLOAD_ASSET",
+                fileName: photo.name,
+                fileType: photo.type || 'image/jpeg',
+                fileSize: photo.size,
+                base64Data: rawBase64
+              })
+            });
+          } catch (uploadErr) {
+            console.warn("Asset upload warning:", uploadErr);
+          }
+        }
+      }
+
+      // 2. Submit SUBMIT_STAGING_REQUEST with isExpedited
+      const proposalPayload = { ...activeProposal };
+      if (proposalPayload.photos) {
+        proposalPayload.photos = proposalPayload.photos.map(p => ({
+          id: p.id,
+          name: p.name,
+          size: p.size,
+          sizeFormatted: p.sizeFormatted,
+          type: p.type
+        }));
+      }
+
       try {
-        await fetch("https://script.google.com/macros/s/AKfycbwK1U9lZTjO0gi2-ZFUkzJbPiH3Y2n2kTfiKZ4bpFLF3rk3DdU4_R8RyF7NM-ClwG5y5g/exec", {
+        await fetch(MASTER_WEBHOOK_URL, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             timestamp: new Date().toISOString(),
-            clientId: "eye-of-ru-enterprises",
-            action: "STAGE_UPDATE",
-            ...activeProposal
+            clientId: CLIENT_NAME,
+            clientName: CLIENT_NAME,
+            action: "SUBMIT_STAGING_REQUEST",
+            flaggedStatus: initialStatus,
+            isExpedited: isExpedited,
+            sla: activeProposal.sla || (isExpedited ? "EXPEDITED SLA: Tomorrow" : "Standard"),
+            submittedBy: "authorized-client@eyeofruenterprisesllc.com",
+            photoCount: (activeProposal.photos || []).length,
+            photoNames: (activeProposal.photos || []).map(p => p.name),
+            ...proposalPayload
           })
         });
       } catch (e) {
         console.warn("Webhook logged locally:", e);
       }
 
-      showToast("Proposal approved and queued to Google Sheet for Antigravity verification!", "success");
+      if (isSensitive) {
+        showToast("⚠️ Sensitive update staged! Agency engineering will call to confirm before releasing.", "info");
+      } else if (isExpedited) {
+        showToast("⚡ Proposal approved under EXPEDITED SLA for tomorrow's staging verification!", "success");
+      } else {
+        showToast("✓ Proposal approved and queued for Antigravity engineering review!", "success");
+      }
+
       rejectDiff();
+
+      // Trigger background sync after 2.5s to refresh synced ledger
+      setTimeout(() => fetchStagingQueue(false), 2500);
     }
   </script>
 

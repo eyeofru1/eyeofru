@@ -1,4 +1,4 @@
-﻿# AI Concierge Dashboard (Baseline Template)
+# AI Concierge Dashboard (Baseline Template)
 
 This document serves as the reusable baseline for the **Client AI Concierge & Staging Queue** dashboard. It is a standalone, vanilla HTML/JS implementation utilizing Tailwind CSS.
 
@@ -175,8 +175,8 @@ Save the following code as `concierge.html` in any standard Vite + Tailwind proj
                 <span><strong>Full-Screen Inspection:</strong> Click any staged diff card or <code class="text-slate-200 bg-charcoal-800 px-1 py-0.5 rounded text-[10px]">Inspect â†—</code> to open the full-screen modal with smooth vertical scrolling.</span>
               </li>
               <li class="flex items-start gap-1.5">
-                <span class="text-bronze-400 font-mono">â–¸</span>
-                <span><strong>Safe Staging:</strong> Nothing touches production directly. Approving a proposal queues it to the Agency Google Sheet ledger for Antigravity verification.</span>
+                <span class="text-bronze-400 font-mono">▸</span>
+                <span><strong>Safe Staging:</strong> Nothing touches production directly. Approving a proposal queues it for staging verification.</span>
               </li>
             </ul>
           </div>
