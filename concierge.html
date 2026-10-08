@@ -156,19 +156,27 @@
       </div>
 
       <!-- Chat Input Form -->
-      <form onsubmit="handleChatSubmit(event)" class="p-3 bg-charcoal-900 border-t border-charcoal-800 flex items-end gap-2.5">
-        <div class="relative flex-grow">
+      <form onsubmit="handleChatSubmit(event)" class="p-3 bg-charcoal-900 border-t border-charcoal-800">
+        <div class="relative w-full">
           <textarea 
             id="chatInput" 
             rows="2"
             oninput="autoResizePrompt(this)"
             onkeydown="handlePromptKeydown(event)"
             placeholder="Propose an update or request diagnostics... (Enter to send, Shift+Enter for new line)" 
-            class="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-950 border border-charcoal-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-bronze-500 text-xs resize-none min-h-[58px] max-h-36 overflow-y-auto leading-relaxed transition-all"></textarea>
+            class="w-full pl-3.5 pr-12 py-3 rounded-xl bg-charcoal-950 border border-charcoal-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-bronze-500 text-xs resize-none min-h-[58px] max-h-36 overflow-y-auto leading-relaxed transition-all block"></textarea>
+          
+          <button 
+            type="submit" 
+            id="sendBtn" 
+            class="absolute right-2.5 bottom-2.5 w-8 h-8 rounded-lg bg-bronze-500 hover:bg-bronze-400 active:scale-95 text-charcoal-950 transition flex items-center justify-center shadow-md flex-shrink-0" 
+            title="Upload / Transmit Prompt" 
+            aria-label="Upload / Transmit Prompt">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+            </svg>
+          </button>
         </div>
-        <button type="submit" id="sendBtn" class="px-4 h-[58px] rounded-xl bg-bronze-500 hover:bg-bronze-400 text-charcoal-950 font-mono font-bold text-xs uppercase transition flex items-center justify-center flex-shrink-0 shadow-md">
-          Send
-        </button>
       </form>
 
     </div>
