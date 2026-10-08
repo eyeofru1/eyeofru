@@ -276,7 +276,7 @@
 <body class="bg-charcoal-900 text-slate-300 font-sans antialiased selection:bg-bronze-500 selection:text-charcoal-950 bg-mesh-glow min-h-screen flex flex-col justify-between overflow-x-hidden">
 
   <!-- HEADER NAVIGATION -->
-  <header class="sticky top-0 z-40 backdrop-blur-md bg-white/95 dark:bg-charcoal-900/90 border-b border-slate-200 dark:border-charcoal-800/80 transition-colors duration-200 w-full">
+  <header class="fixed top-0 z-40 backdrop-blur-md bg-white/95 dark:bg-charcoal-900/90 border-b border-slate-200 dark:border-charcoal-800/80 transition-colors duration-200 w-full">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
       
       <!-- Brand Logo / Monogram -->
@@ -337,7 +337,7 @@
   </header>
 
   <!-- MAIN VIEWPORT -->
-  <main class="flex-grow">
+  <main class="flex-grow pt-16 sm:pt-20">
 
     <!-- HERO SECTION -->
     <section class="relative pt-10 pb-16 sm:pt-20 sm:pb-24 md:pt-28 md:pb-36 overflow-hidden border-b border-charcoal-800/60">
@@ -681,8 +681,6 @@
             <li><button onclick="openModal('privacyModal')" class="hover:text-bronze-300 transition text-left">Privacy Policy</button></li>
             <li><button onclick="openModal('termsModal')" class="hover:text-bronze-300 transition text-left">Terms of Operation</button></li>
             <li><button onclick="openModal('governanceModal')" class="hover:text-bronze-300 transition text-left">Corporate Disclosures</button></li>
-            <li><a href="/sitemap.xml" target="_blank" class="hover:text-bronze-300 transition">XML Sitemap</a></li>
-            <li><a href="/robots.txt" target="_blank" class="hover:text-bronze-300 transition">Robots Directive</a></li>
           </ul>
         </div>
 
