@@ -1447,9 +1447,8 @@ Applied Enhancements:
       const stagingCount = document.getElementById('tabStagingCount');
       if (stagingBadge && stagingCount) {
         const pendingCount = stagedItems.filter(i => i.status !== 'DEPLOYED' && i.status !== 'REJECTED').length;
-        const countToShow = pendingCount > 0 ? pendingCount : stagedItems.length;
-        if (countToShow > 0) {
-          stagingCount.textContent = countToShow;
+        if (pendingCount > 0) {
+          stagingCount.textContent = pendingCount;
           stagingBadge.classList.remove('hidden');
           stagingBadge.classList.add('inline-flex');
         } else {
@@ -1463,9 +1462,8 @@ Applied Enhancements:
       const inqCount = document.getElementById('tabInquiriesCount');
       if (inqBadge && inqCount) {
         const newLeads = liveLeads.filter(l => !l.status || l.status === 'New Lead');
-        const countToShow = newLeads.length > 0 ? newLeads.length : liveLeads.length;
-        if (countToShow > 0) {
-          inqCount.textContent = countToShow;
+        if (newLeads.length > 0) {
+          inqCount.textContent = newLeads.length;
           inqBadge.classList.remove('hidden');
           inqBadge.classList.add('inline-flex');
         } else {
@@ -1495,6 +1493,7 @@ Applied Enhancements:
 
     function startDashboardPolling() {
       if (dashboardPollTimer) return;
+      if (document.visibilityState !== 'visible') return;
       dashboardPollTimer = setInterval(() => {
         if (document.visibilityState === 'visible') {
           fetchStagingQueue(false);
@@ -1502,6 +1501,8 @@ Applied Enhancements:
           if (currentQueueTab === 'analytics') {
             fetchAnalytics(currentAnalyticsDays, false);
           }
+        } else {
+          stopDashboardPolling();
         }
       }, DASHBOARD_POLL_INTERVAL_MS);
     }
@@ -1517,9 +1518,23 @@ Applied Enhancements:
       if (document.visibilityState === 'visible') {
         fetchStagingQueue(false);
         fetchLiveInquiries(false);
+        if (currentQueueTab === 'analytics') {
+          fetchAnalytics(currentAnalyticsDays, false);
+        }
         startDashboardPolling();
       } else {
         stopDashboardPolling();
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      if (document.visibilityState === 'visible') {
+        fetchStagingQueue(false);
+        fetchLiveInquiries(false);
+        if (currentQueueTab === 'analytics') {
+          fetchAnalytics(currentAnalyticsDays, false);
+        }
+        startDashboardPolling();
       }
     });
 
