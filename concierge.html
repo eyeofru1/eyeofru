@@ -143,9 +143,8 @@
 
       <!-- Suggested Starter Prompts -->
       <div class="px-3.5 py-2 bg-charcoal-900/50 border-t border-charcoal-800/80 flex items-center gap-2 overflow-x-auto text-[10px] font-mono text-slate-400">
-        <span class="text-slate-500 flex-shrink-0">Starter Prompts:</span>
-        <button type="button" onclick="useQuickPrompt('Audit Core Web Vitals and edge latency metrics')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load CWV speed prompt into prompt box">
-          + CWV Speed
+        <button type="button" onclick="useQuickPrompt('Update [Section]: Change [Current Text] to [Proposed Text]')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load adjustment template into prompt box">
+          + Adjust Template
         </button>
         <button type="button" onclick="useQuickPrompt('Update Friday operating hours to close at 17:00 EST')" class="px-2.5 py-1 rounded bg-charcoal-800 hover:bg-charcoal-750 hover:text-bronze-300 hover:border-bronze-500/40 text-slate-300 flex-shrink-0 transition border border-charcoal-700/70" title="Load operating hours prompt into prompt box">
           + Update Hours
@@ -164,15 +163,15 @@
             oninput="autoResizePrompt(this)"
             onkeydown="handlePromptKeydown(event)"
             placeholder="Propose an update or request diagnostics... (Enter to send, Shift+Enter for new line)" 
-            class="w-full pl-3.5 pr-12 py-3 rounded-xl bg-charcoal-950 border border-charcoal-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-bronze-500 text-xs resize-none min-h-[58px] max-h-36 overflow-y-auto leading-relaxed transition-all block"></textarea>
+            class="w-full pl-3.5 pr-8 py-2.5 rounded-xl bg-charcoal-950 border border-charcoal-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-bronze-500 text-xs resize-none min-h-[58px] max-h-36 overflow-y-auto leading-relaxed transition-all block"></textarea>
           
           <button 
             type="submit" 
             id="sendBtn" 
-            class="absolute right-2.5 bottom-2.5 w-8 h-8 rounded-lg bg-bronze-500 hover:bg-bronze-400 active:scale-95 text-charcoal-950 transition flex items-center justify-center shadow-md flex-shrink-0" 
+            class="absolute right-2 bottom-2 w-[22px] h-[22px] rounded-md bg-bronze-500 hover:bg-bronze-400 active:scale-95 text-charcoal-950 transition flex items-center justify-center shadow-sm flex-shrink-0" 
             title="Upload / Transmit Prompt" 
             aria-label="Upload / Transmit Prompt">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
             </svg>
           </button>
@@ -407,8 +406,34 @@
 
         const q = query.toLowerCase();
 
+        // 0. Template / copy adjustment match
+        if (q.includes("change") && q.includes("to")) {
+          let section = "Site Content";
+          let currentVal = "[Current Baseline]";
+          let proposedVal = query;
+
+          if (query.toLowerCase().startsWith("update") && query.includes(":")) {
+            section = query.split(":")[0].replace(/^update\s+/i, "").trim();
+          }
+
+          const changeMatch = query.match(/change\s+["']?([^"']+)["']?\s+to\s+["']?([^"'\n]+)["']?/i);
+          if (changeMatch) {
+            currentVal = changeMatch[1].trim();
+            proposedVal = changeMatch[2].trim();
+          }
+
+          activeProposal = {
+            targetSection: section,
+            field: "Copy Revision",
+            currentValue: currentVal,
+            proposedValue: proposedVal,
+            clientRationale: query
+          };
+          renderDiffProposal(activeProposal);
+          appendChatMessage("CONCIERGE AGENT", `Generated a live diff proposal for "${section}". Inspect the comparison in the staging pane.`);
+
         // 1. Venture/Portfolio check (takes precedence so 'quantum auditing' does not collide with CWV audit)
-        if (q.includes("venture") || q.includes("project") || q.includes("portfolio") || q.includes("quantum")) {
+        } else if (q.includes("venture") || q.includes("project") || q.includes("portfolio") || q.includes("quantum")) {
           let ventureTitle = "Decentralized Quantum Auditing";
           let ventureSummary = "Enterprise formal verification suite for quantum-resistant cryptographic contracts.";
 
