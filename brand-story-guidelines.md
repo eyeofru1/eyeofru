@@ -107,4 +107,4 @@ A comprehensive, zero-pressure diagnostic analyzing your current digital speed, 
 ### Primary Call to Action Block
 * **Button Text**: `Request a Modernization Review`
 * **Supporting Micro-Copy**:  
-  *Receive a focused analysis of your website speed, mobile user experience, and local map visibility. No sales pressure—just clear, actionable insight.*
+  *Every business has a distinct journey. Tell us what you’re looking to solve, build, or modernize—we review every note personally to explore how we can help.*

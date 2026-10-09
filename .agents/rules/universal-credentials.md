@@ -23,6 +23,7 @@ Agents must **never** inspect or display secret values in the terminal, chat con
   * `echo $KEY`, `printenv`, `dir env:`, `Get-ChildItem env:`
   * Asking the user to paste credentials directly into the chat prompt.
   * Dumping full environment tables in debug or test commands.
+  * **Wildcard Regex Vault Loading**: Using wildcard regex loops (e.g., `^([^#=]+)=(.*)$`) to indiscriminately load all keys from the vault into memory. Agents must explicitly target and extract *only* the specific keys required for a script to prevent credential over-exposure.
 
 * ✔️ **MANDATORY VERIFICATION**:
   Verify presence using silent exit checks:
