@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="currentColor">
+  <!-- Top Architectural Crown Bar -->
+  <polygon points="14,13 86,13 84,19 16,19" />
+  
+  <!-- Tier 2: Lateral Wing Bars & Eyebrow Framing -->
+  <polygon points="14,23 32,23 33,28 14,28" />
+  <polygon points="68,23 86,23 86,28 67,28" />
+  
+  <!-- Tier 3: Lower Flank Wings -->
+  <polygon points="14,32 26,32 30,37 14,37" />
+  <polygon points="74,32 86,32 86,37 70,37" />
+  
+  <!-- Upper Eyelid Arch (Smooth Aerodynamic Curve) -->
+  <path d="M 14 39 C 24 29 40 26 50 26 C 60 26 76 29 86 39 C 76 33 60 30 50 30 C 40 30 24 33 14 39 Z" />
+  
+  <!-- Lower Eyelid Arch -->
+  <path d="M 14 39 C 24 49 39 53 50 53 C 61 53 76 49 86 39 C 75 45 61 48 50 48 C 39 48 25 45 14 39 Z" />
+  
+  <!-- Solid Gold Iris / Pupil Core with Center Pinhole -->
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M 50 29 C 56.075 29 61 33.925 61 40 C 61 46.075 56.075 51 50 51 C 43.925 51 39 46.075 39 40 C 39 33.925 43.925 29 50 29 Z M 50 36 C 52.209 36 54 37.791 54 40 C 54 42.209 52.209 44 50 44 C 47.791 44 46 42.209 46 40 C 46 37.791 47.791 36 50 36 Z" />
+  
+  <!-- Lower Keystone Assembly: Center Pillar -->
+  <polygon points="46,55 54,55 54,82 50,87 46,82" />
+  
+  <!-- Lower Left Triangular Facet -->
+  <polygon points="32,58 43,58 43,76" />
+  
+  <!-- Lower Right Falcon Chevron Plume -->
+  <polygon points="56,54 75,54 64,68 64,74 56,64" />
+</svg>

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <!-- Top Chamfer Highlight (Direct overhead key light) -->
+    <linearGradient id="goldTopBevel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fffbf2" />
+      <stop offset="50%" stop-color="#f8ddae" />
+      <stop offset="100%" stop-color="#ddaa53" />
+    </linearGradient>
+
+    <!-- Front Face (Satin metallic gold reflection) -->
+    <linearGradient id="goldFrontFace" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#b68839" />
+      <stop offset="15%" stop-color="#f2cf87" />
+      <stop offset="50%" stop-color="#fff5e1" />
+      <stop offset="85%" stop-color="#e3bc72" />
+      <stop offset="100%" stop-color="#9d6e24" />
+    </linearGradient>
+
+    <!-- Shadow Face (Warm architectural bronze core shadow) -->
+    <linearGradient id="goldShadowFace" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#be8c3a" />
+      <stop offset="100%" stop-color="#64400e" />
+    </linearGradient>
+
+    <!-- Radial Iris Gradient for Focal Reticle Aperture -->
+    <radialGradient id="goldIris" cx="42%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="#fff9ec" />
+      <stop offset="30%" stop-color="#f4d28d" />
+      <stop offset="70%" stop-color="#c89b4e" />
+      <stop offset="100%" stop-color="#6e4713" />
+    </radialGradient>
+
+    <!-- Pillar Left Facet (Direct reflection) -->
+    <linearGradient id="pillarLeft" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f3d7a2" />
+      <stop offset="100%" stop-color="#c59441" />
+    </linearGradient>
+
+    <!-- Pillar Right Facet (Deep cast shadow) -->
+    <linearGradient id="pillarRight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9a6b22" />
+      <stop offset="100%" stop-color="#55350b" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Top Architectural Crown Bar (Chamfered Beveled Beam) -->
+  <polygon points="17,13 83,13 86,16 14,16" fill="url(#goldTopBevel)" />
+  <polygon points="14,16 86,16 86,20 14,20" fill="url(#goldFrontFace)" />
+
+  <!-- 2. Tier 2: Lateral Wing Bars & Eyebrow Framing -->
+  <!-- Left Wing -->
+  <polygon points="14,24 33,24 33,26.5 14,26.5" fill="url(#goldTopBevel)" />
+  <polygon points="14,26.5 33,26.5 33,29 14,29" fill="url(#goldShadowFace)" />
+  <!-- Right Wing -->
+  <polygon points="67,24 86,24 86,26.5 67,26.5" fill="url(#goldTopBevel)" />
+  <polygon points="67,26.5 86,26.5 86,29 67,29" fill="url(#goldShadowFace)" />
+
+  <!-- 3. Tier 3: Lower Flank Wings -->
+  <!-- Left Lower Wing -->
+  <polygon points="14,33 28,33 30,37.5 14,37.5" fill="url(#goldFrontFace)" />
+  <!-- Right Lower Wing -->
+  <polygon points="72,33 86,33 86,37.5 70,37.5" fill="url(#goldFrontFace)" />
+
+  <!-- 4. Upper Eyelid Arch (Sweeping Aerodynamic Facet) -->
+  <path d="M 14 39 C 24 29 40 26 50 26 C 60 26 76 29 86 39 C 76 33 60 30 50 30 C 40 30 24 33 14 39 Z" fill="url(#goldTopBevel)" />
+
+  <!-- 5. Lower Eyelid Arch -->
+  <path d="M 14 39 C 24 49 39 53 50 53 C 61 53 76 49 86 39 C 75 45 61 48 50 48 C 39 48 25 45 14 39 Z" fill="url(#goldShadowFace)" />
+
+  <!-- 6. Solid Gold Iris / Pupil Core with Center Pinhole -->
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M 50 29 C 56.075 29 61 33.925 61 40 C 61 46.075 56.075 51 50 51 C 43.925 51 39 46.075 39 40 C 39 33.925 43.925 29 50 29 Z M 50 36 C 52.209 36 54 37.791 54 40 C 54 42.209 52.209 44 50 44 C 47.791 44 46 42.209 46 40 C 46 37.791 47.791 36 50 36 Z" fill="url(#goldIris)" />
+
+  <!-- 7. Lower Keystone Assembly: Center Pillar (Bifurcated Spine) -->
+  <!-- Left Half (Light Facet) -->
+  <polygon points="46,55 50,55 50,87 46,82" fill="url(#pillarLeft)" />
+  <!-- Right Half (Shadow Facet) -->
+  <polygon points="50,55 54,55 54,82 50,87" fill="url(#pillarRight)" />
+
+  <!-- 8. Lower Left Triangular Facet (Falcon Tear) -->
+  <polygon points="32,58 43,58 43,76" fill="url(#goldTopBevel)" />
+
+  <!-- 9. Lower Right Falcon Chevron Plume (Faceted Plumage) -->
+  <polygon points="56,54 75,54 64,68" fill="url(#goldFrontFace)" />
+  <polygon points="64,68 75,54 64,74 56,64" fill="url(#goldShadowFace)" />
+</svg>
